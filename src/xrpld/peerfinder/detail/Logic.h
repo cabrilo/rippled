@@ -685,8 +685,8 @@ public:
                 SlotImp::ptr const& slot = t.slot();
                 auto const& list = t.list();
                 JLOG(m_journal.trace())
-                    << beast::leftw(18) << "Logic sending "
-                    << slot->logPrefix() << " with " << list.size()
+                    << beast::leftw(18) << "Logic sending " << slot->logPrefix()
+                    << " with " << list.size()
                     << ((list.size() == 1) ? " endpoint" : " endpoints");
                 result.push_back(std::make_pair(slot, list));
             }
