@@ -135,6 +135,7 @@ private:
     Application& app_;
     id_t const id_;
     std::string fingerprint_;
+    std::string prefix_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
@@ -690,10 +691,16 @@ private:
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
-    std::string
-    logPrefix() const override
+    std::string const&
+    fingerprint() const override
     {
-        return "[" + fingerprint_ + "] ";
+        return fingerprint_;
+    }
+
+    std::string const&
+    prefix() const
+    {
+        return prefix_;
     }
 
 public:
@@ -841,8 +848,9 @@ PeerImp::PeerImp(
     , id_(id)
     , fingerprint_(
           getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
-    , sink_(app_.journal("Peer"), makePrefix(fingerprint_))
-    , p_sink_(app_.journal("Protocol"), makePrefix(fingerprint_))
+    , prefix_(makePrefix(fingerprint_))
+    , sink_(app_.journal("Peer"), prefix_)
+    , p_sink_(app_.journal("Protocol"), prefix_)
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))

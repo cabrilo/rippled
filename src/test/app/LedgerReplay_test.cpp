@@ -325,8 +325,8 @@ public:
         return false;
     }
 
-    std::string
-    logPrefix() const override
+    std::string const&
+    fingerprint() const override
     {
         return fingerprint_;
     }

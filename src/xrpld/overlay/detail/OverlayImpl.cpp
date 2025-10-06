@@ -436,7 +436,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 void
 OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 {
-    beast::WrappedSink sink{journal_.sink(), peer->logPrefix()};
+    beast::WrappedSink sink{journal_.sink(), peer->prefix()};
     beast::Journal journal{sink};
 
     std::lock_guard lock(mutex_);
@@ -606,7 +606,7 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
-    beast::WrappedSink sink{journal_.sink(), peer->logPrefix()};
+    beast::WrappedSink sink{journal_.sink(), peer->prefix()};
     beast::Journal journal{sink};
 
     // Now track this peer

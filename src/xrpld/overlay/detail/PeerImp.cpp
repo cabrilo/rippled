@@ -84,8 +84,9 @@ PeerImp::PeerImp(
     , id_(id)
     , fingerprint_(
           getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)))
-    , sink_(app_.journal("Peer"), makePrefix(fingerprint_))
-    , p_sink_(app_.journal("Protocol"), makePrefix(fingerprint_))
+    , prefix_(makePrefix(fingerprint_))
+    , sink_(app_.journal("Peer"), prefix_)
+    , p_sink_(app_.journal("Protocol"), prefix_)
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))

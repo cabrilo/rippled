@@ -795,7 +795,7 @@ ValidatorList::sendValidatorList(
                     << " validator list collection(s) containing " << numVLs
                     << " validator list(s) for " << strHex(publisherKey)
                     << " with sequence range " << peerSequence << ", "
-                    << newPeerSequence << " to " << peer.logPrefix();
+                    << newPeerSequence << " to " << peer.fingerprint();
             else
             {
                 XRPL_ASSERT(
@@ -805,7 +805,7 @@ ValidatorList::sendValidatorList(
                 JLOG(j.debug())
                     << "Sent validator list for " << strHex(publisherKey)
                     << " with sequence " << newPeerSequence << " to "
-                    << peer.logPrefix();
+                    << peer.fingerprint();
             }
         }
     }
