@@ -732,7 +732,7 @@ std::string
 PeerImp::makePrefix(std::string const& fingerprint)
 {
     std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << fingerprint << "] ";
+    ss << "[" << fingerprint << "] ";
     return ss.str();
 }
 
