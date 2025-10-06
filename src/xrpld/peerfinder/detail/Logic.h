@@ -362,8 +362,8 @@ public:
         beast::WrappedSink sink{m_journal.sink(), slot->fingerprint()};
         beast::Journal journal{sink};
 
-        JLOG(journal.trace())
-            << beast::leftw(18) << "Logic connected on local " << local_endpoint;
+        JLOG(journal.trace()) << beast::leftw(18) << "Logic connected on local "
+                              << local_endpoint;
 
         std::lock_guard _(lock_);
 
@@ -959,7 +959,8 @@ public:
         switch (slot->state())
         {
             case Slot::accept:
-                JLOG(journal.trace()) << beast::leftw(18) << "Logic accept failed";
+                JLOG(journal.trace())
+                    << beast::leftw(18) << "Logic accept failed";
                 break;
 
             case Slot::connect:
