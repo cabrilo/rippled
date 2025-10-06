@@ -359,7 +359,7 @@ public:
         SlotImp::ptr const& slot,
         beast::IP::Endpoint const& local_endpoint)
     {
-        beast::WrappedSink sink{m_journal.sink(), slot->fingerprint()};
+        beast::WrappedSink sink{m_journal.sink(), slot->logPrefix()};
         beast::Journal journal{sink};
 
         JLOG(journal.trace()) << beast::leftw(18) << "Logic connected on local "
@@ -399,7 +399,7 @@ public:
     Result
     activate(SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
     {
-        beast::WrappedSink sink{m_journal.sink(), slot->fingerprint()};
+        beast::WrappedSink sink{m_journal.sink(), slot->logPrefix()};
         beast::Journal journal{sink};
 
         JLOG(journal.debug())
@@ -686,7 +686,7 @@ public:
                 auto const& list = t.list();
                 JLOG(m_journal.trace())
                     << beast::leftw(18) << "Logic sending "
-                    << slot->fingerprint() << " with " << list.size()
+                    << slot->logPrefix() << " with " << list.size()
                     << ((list.size() == 1) ? " endpoint" : " endpoints");
                 result.push_back(std::make_pair(slot, list));
             }
@@ -791,7 +791,7 @@ public:
     void
     on_endpoints(SlotImp::ptr const& slot, Endpoints list)
     {
-        beast::WrappedSink sink{m_journal.sink(), slot->fingerprint()};
+        beast::WrappedSink sink{m_journal.sink(), slot->logPrefix()};
         beast::Journal journal{sink};
 
         // If we're sent too many endpoints, sample them at random:
@@ -939,7 +939,7 @@ public:
 
         remove(slot);
 
-        beast::WrappedSink sink{m_journal.sink(), slot->fingerprint()};
+        beast::WrappedSink sink{m_journal.sink(), slot->logPrefix()};
         beast::Journal journal{sink};
 
         // Mark fixed slot failure

@@ -690,10 +690,10 @@ private:
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
-    std::string const&
-    fingerprint() const override
+    std::string
+    logPrefix() const override
     {
-        return fingerprint_;
+        return "[" + fingerprint_ + "] ";
     }
 
 public:

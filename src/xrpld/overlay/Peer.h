@@ -112,8 +112,8 @@ public:
     virtual void
     setPublisherListSequence(PublicKey const&, std::size_t const) = 0;
 
-    virtual std::string const&
-    fingerprint() const = 0;
+    virtual std::string
+    logPrefix() const = 0;
     //
     // Ledger
     //

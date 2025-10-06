@@ -92,9 +92,9 @@ public:
     }
 
     std::string
-    fingerprint() const
+    logPrefix() const
     {
-        return getFingerprint(remote_endpoint(), public_key());
+        return "[" + getFingerprint(remote_endpoint(), public_key()) + "] ";
     }
 
     std::optional<std::uint16_t>

@@ -475,8 +475,8 @@ public:
         return id_;
     }
 
-    std::string const&
-    fingerprint() const override
+    std::string
+    logPrefix() const override
     {
         return fingerprint_;
     }
