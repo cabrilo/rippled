@@ -304,6 +304,25 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     env.balance(depositor, shares) == share(200 * scale));
             }
+            else
+            {
+                testcase(prefix + " deposit/withdrawal same as fee");
+                auto const amount = env.current()->fees().base;
+
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                env(tx);
+                env.close();
+
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                env(tx);
+                env.close();
+            }
 
             {
                 testcase(
