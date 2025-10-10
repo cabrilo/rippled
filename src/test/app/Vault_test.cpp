@@ -322,6 +322,22 @@ class Vault_test : public beast::unit_test::suite
                      .amount = amount});
                 env(tx);
                 env.close();
+
+                tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                env(tx);
+                env.close();
+
+                // Withdraw to 3rd party
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = amount});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
             }
 
             {
