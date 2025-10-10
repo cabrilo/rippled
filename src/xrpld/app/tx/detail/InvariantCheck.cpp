@@ -2857,7 +2857,7 @@ ValidVault::finalize(
 
     if (!beforeVault_.empty() &&
         afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
-        tx.getTxnType() != ttLOAN_MANAGE)
+        txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change loss "
@@ -2879,9 +2879,9 @@ ValidVault::finalize(
     }();
 
     if (!beforeShares &&
-        (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-         tx.getTxnType() == ttVAULT_CLAWBACK))
+        (txnType == ttVAULT_DEPOSIT ||   //
+         txnType == ttVAULT_WITHDRAW ||  //
+         txnType == ttVAULT_CLAWBACK))
     {
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
@@ -3414,17 +3414,122 @@ ValidVault::finalize(
                 return result;
             }
 
-            case ttLOAN_SET:
-            case ttLOAN_MANAGE:
-            case ttLOAN_PAY: {
-                // TBD
-                return true;
+            case ttLOAN_SET: {
+                bool result = true;
+
+                if (beforeShares)
+                {
+                    JLOG(j.fatal())  //
+                        << "Invariant failed: loan must not have updated vault "
+                           "shares";
+                    result = false;
+                }
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "ripple::ValidVault::finalize : loan updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (!vaultDeltaAssets)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: loan must change vault balance";
+                    return false;  // That's all we can do
+                }
+
+                if (*vaultDeltaAssets >= zero)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: loan must "
+                                       "decrease vault balance";
+                    result = false;
+                }
+
+                auto loan =
+                    beforeVault.assetsAvailable - afterVault.assetsAvailable;
+                if (loan <= zero)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: loan must be greater than zero";
+                    result = false;
+                }
+
+                auto const interest =
+                    afterVault.assetsTotal - beforeVault.assetsTotal;
+                if (interest < zero)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: loan interest must be positive";
+                    result = false;
+                }
+
+                if (*vaultDeltaAssets * -1 != loan)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: loan must agree with "
+                                       "change of vault balance";
+                    result = false;
+                }
+
+                return result;
             }
 
-            default:
+            case ttLOAN_PAY: {
+                bool result = true;
+
+                if (beforeShares)
+                {
+                    JLOG(j.fatal())  //
+                        << "Invariant failed: loan must not have updated vault "
+                           "shares";
+                    result = false;
+                }
+
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "ripple::ValidVault::finalize : payment updated a vault");
+                // auto const& beforeVault = beforeVault_[0];
+
+                auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
+                if (!vaultDeltaAssets)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: payment must change "
+                                       "vault balance";
+                    return false;  // That's all we can do
+                }
+
+                if (*vaultDeltaAssets <= zero)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: payment must "
+                                       "increase vault balance";
+                    result = false;
+                }
+
+                // TODO
+
+                return result;
+            }
+
+            case ttLOAN_MANAGE: {
+                bool result = true;
+
+                if (beforeShares)
+                {
+                    JLOG(j.fatal())  //
+                        << "Invariant failed: loan management must not have "
+                           "updated vault shares";
+                    result = false;
+                }
+
+                // TODO
+
+                return result;
+            }
+
                 // LCOV_EXCL_START
+            default:
                 UNREACHABLE(
-                    "ripple::ValidVault::finalize : unknown transaction type");
+                    "ripple::ValidVault::finalize : unknown transaction "
+                    "type");
                 return false;
                 // LCOV_EXCL_STOP
         }
