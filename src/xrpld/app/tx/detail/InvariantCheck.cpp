@@ -2297,7 +2297,7 @@ ValidVault::visitEntry(
     }
 
     uint256 const key = (before ? before->key() : after->key());
-    if (sign && balance != zero)
+    if (sign != 0)
         deltas_[key] = balance * sign;
 }
 
@@ -2840,7 +2840,7 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares)
+                if (!vaultDeltaShares || *vaultDeltaShares == zero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: deposit must change vault shares";
@@ -2979,7 +2979,7 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares)
+                if (!vaultDeltaShares || *vaultDeltaShares == zero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: withdrawal must change vault shares";
@@ -3064,7 +3064,7 @@ ValidVault::finalize(
                 }
 
                 auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares)
+                if (!vaultDeltaShares || *vaultDeltaShares == zero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: clawback must change vault shares";
