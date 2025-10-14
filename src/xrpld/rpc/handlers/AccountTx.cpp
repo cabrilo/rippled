@@ -437,7 +437,7 @@ doAccountTxJson(RPC::JsonContext& context)
         auto const& jvLimit = params[jss::limit];
         if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
             return RPC::expected_field_error(jss::limit, "unsigned integer");
-        
+
         // Check if the value is 0 (invalid)
         if (jvLimit.asUInt() == 0)
             return rpcError(rpcINVALID_PARAMS);
