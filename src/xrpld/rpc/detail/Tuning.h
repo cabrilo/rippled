@@ -46,7 +46,7 @@ static LimitRange constexpr accountObjects = {10, 200, 400};
 static LimitRange constexpr accountOffers = {10, 200, 400};
 
 /** Limits for the account_tx command. */
-static LimitRange constexpr accountTx = {1, 200, 1000};
+static LimitRange constexpr accountTx = {10, 200, 400};
 
 /** Limits for the book_offers command. */
 static LimitRange constexpr bookOffers = {0, 60, 100};

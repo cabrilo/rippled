@@ -193,26 +193,26 @@ class AccountTx_test : public beast::unit_test::suite
                 j[jss::result][jss::error] == RPC::get_error_info(code).token;
         };
 
-        Json::Value jParms;
-        jParms[jss::api_version] = apiVersion;
+        Json::Value jParams;
+        jParams[jss::api_version] = apiVersion;
 
         BEAST_EXPECT(isErr(
-            env.rpc("json", "account_tx", to_string(jParms)),
+            env.rpc("json", "account_tx", to_string(jParams)),
             rpcINVALID_PARAMS));
 
-        jParms[jss::account] = "0xDEADBEEF";
+        jParams[jss::account] = "0xDEADBEEF";
 
         BEAST_EXPECT(isErr(
-            env.rpc("json", "account_tx", to_string(jParms)),
+            env.rpc("json", "account_tx", to_string(jParams)),
             rpcACT_MALFORMED));
 
-        jParms[jss::account] = A1.human();
+        jParams[jss::account] = A1.human();
         BEAST_EXPECT(hasTxs(
-            env.rpc(apiVersion, "json", "account_tx", to_string(jParms))));
+            env.rpc(apiVersion, "json", "account_tx", to_string(jParams))));
 
         // Ledger min/max index
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
             p[jss::ledger_index_min] = -1;
             p[jss::ledger_index_max] = -1;
             BEAST_EXPECT(hasTxs(
@@ -247,7 +247,7 @@ class AccountTx_test : public beast::unit_test::suite
         }
         // Ledger index min only
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
             p[jss::ledger_index_min] = -1;
             BEAST_EXPECT(hasTxs(
                 env.rpc(apiVersion, "json", "account_tx", to_string(p))));
@@ -270,7 +270,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Ledger index max only
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
             p[jss::ledger_index_max] = -1;
             BEAST_EXPECT(hasTxs(
                 env.rpc(apiVersion, "json", "account_tx", to_string(p))));
@@ -298,7 +298,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Ledger Sequence
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
 
             p[jss::ledger_index] = env.closed()->info().seq;
             BEAST_EXPECT(hasTxs(
@@ -319,7 +319,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Ledger Hash
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
 
             p[jss::ledger_hash] = to_string(env.closed()->info().hash);
             BEAST_EXPECT(hasTxs(
@@ -332,9 +332,9 @@ class AccountTx_test : public beast::unit_test::suite
         // Ledger index max/min/index all specified
         // ERRORS out with invalid Parenthesis
         {
-            jParms[jss::account] = "0xDEADBEEF";
-            jParms[jss::account] = A1.human();
-            Json::Value p{jParms};
+            jParams[jss::account] = "0xDEADBEEF";
+            jParams[jss::account] = A1.human();
+            Json::Value p{jParams};
 
             p[jss::ledger_index_max] = -1;
             p[jss::ledger_index_min] = -1;
@@ -351,7 +351,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Ledger index max only
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
             p[jss::ledger_index_max] = env.current()->info().seq;
             if (apiVersion < 2u)
                 BEAST_EXPECT(hasTxs(
@@ -382,7 +382,7 @@ class AccountTx_test : public beast::unit_test::suite
         }
         // test binary and forward for bool/non bool values
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
             p[jss::binary] = "asdf";
             if (apiVersion < 2u)
             {
@@ -412,7 +412,7 @@ class AccountTx_test : public beast::unit_test::suite
         }
         // test limit with malformed values
         {
-            Json::Value p{jParms};
+            Json::Value p{jParams};
 
             // Test case: limit = 0 should fail (below minimum)
             p[jss::limit] = 0;
