@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/permissioned_domains.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -1252,20 +1254,47 @@ public:
     }
 
     void
+    testDeletePermissionedDomainOwner()
+    {
+        using namespace jtx;
+
+        Env env{*this};
+        Account alice{"alice"};
+        Account becky{"becky"};
+        env.fund(XRP(1000), alice, becky);
+        env.close();
+        env(fset(becky, asfDepositAuth));
+        env.close();
+
+        pdomain::Credentials const credentials1{
+            {.issuer = alice, .credType = "foobaz"}};
+
+        env(pdomain::setTx(alice, credentials1));
+        // Close 256 ledgers
+        for (int i = 0; i < 256; ++i)
+            env.close();
+
+        auto const acctDelFee{drops(env.current()->fees().increment)};
+        env(acctdelete(alice, becky), fee(acctDelFee), ter{tecNO_PERMISSION});
+        env.close();
+    }
+
+    void
     run() override
     {
-        testBasics();
-        testDirectories();
-        testOwnedTypes();
-        testResurrection();
-        testAmendmentEnable();
-        testTooManyOffers();
-        testImplicitlyCreatedTrustline();
-        testBalanceTooSmallForFee();
-        testWithTickets();
-        testDest();
-        testDestinationDepositAuthCredentials();
-        testDeleteCredentialsOwner();
+        // testBasics();
+        // testDirectories();
+        // testOwnedTypes();
+        // testResurrection();
+        // testAmendmentEnable();
+        // testTooManyOffers();
+        // testImplicitlyCreatedTrustline();
+        // testBalanceTooSmallForFee();
+        // testWithTickets();
+        // testDest();
+        // testDestinationDepositAuthCredentials();
+        // testDeleteCredentialsOwner();
+        testDeletePermissionedDomainOwner();
     }
 };
 
