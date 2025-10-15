@@ -3457,14 +3457,14 @@ ValidVault::finalize(
                 if (*vaultDeltaAssets * -1 != loan)
                 {
                     JLOG(j.fatal()) << "Invariant failed: loan must agree with "
-                                       "change of vault assets available";
+                                       "change of assets available";
                     result = false;
                 }
 
                 if (afterVault.assetsTotal < beforeVault.assetsTotal)
                 {
                     JLOG(j.fatal()) << "Invariant failed: loan must not "
-                                       "decrease vault assets outstanding";
+                                       "decrease assets outstanding";
                     result = false;
                 }
 
@@ -3511,7 +3511,7 @@ ValidVault::finalize(
                 // if (afterVault.assetsTotal < beforeVault.assetsTotal)
                 // {
                 //     JLOG(j.fatal()) << "Invariant failed: payment must not "
-                //                        "decrease vault assets outstanding";
+                //                        "decrease assets outstanding";
                 //     result = false;
                 // }
 
@@ -3520,7 +3520,7 @@ ValidVault::finalize(
                 {
                     JLOG(j.fatal())
                         << "Invariant failed: payment must agree with "
-                           "change of vault assets available";
+                           "change of assets available";
                     result = false;
                 }
 
@@ -3538,7 +3538,62 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                // TODO
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "ripple::ValidVault::finalize : loan manage updated a "
+                    "vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                if (auto const vaultDeltaAssets =
+                        deltaAssets(afterVault.pseudoId);
+                    vaultDeltaAssets)
+                {
+                    if (*vaultDeltaAssets < zero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: loan manage must not "
+                               "decrease vault balance";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                        afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: loan manage must agree "
+                               "with change in  assets avalable";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsTotal < afterVault.assetsTotal)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: loan manage must not "
+                               "increase assets outstanding";
+                        result = false;
+                    }
+                }
+                else
+                {
+                    if (beforeVault.assetsAvailable !=
+                        afterVault.assetsAvailable)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: loan manage must not "
+                               "change assets available without altering "
+                               "vault balance";
+                        result = false;
+                    }
+
+                    if (beforeVault.assetsTotal != afterVault.assetsTotal)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: loan manage must not "
+                               "change assets outstanding without altering "
+                               "vault balance";
+                        result = false;
+                    }
+                }
 
                 return result;
             }
