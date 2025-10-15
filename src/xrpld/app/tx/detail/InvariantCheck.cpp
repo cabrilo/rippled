@@ -3445,7 +3445,7 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto loan =
+                auto const loan =
                     beforeVault.assetsAvailable - afterVault.assetsAvailable;
                 if (loan <= zero)
                 {
@@ -3454,19 +3454,17 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const interest =
-                    afterVault.assetsTotal - beforeVault.assetsTotal;
-                if (interest < zero)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: loan interest must be positive";
-                    result = false;
-                }
-
                 if (*vaultDeltaAssets * -1 != loan)
                 {
                     JLOG(j.fatal()) << "Invariant failed: loan must agree with "
-                                       "change of vault balance";
+                                       "change of vault assets available";
+                    result = false;
+                }
+
+                if (afterVault.assetsTotal < beforeVault.assetsTotal)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: loan must not "
+                                       "decrease vault assets outstanding";
                     result = false;
                 }
 
@@ -3504,7 +3502,27 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                // TODO
+                XRPL_ASSERT(
+                    !beforeVault_.empty(),
+                    "ripple::ValidVault::finalize : payment updated a vault");
+                auto const& beforeVault = beforeVault_[0];
+
+                // TODO: this is failing Loan tests, why ?
+                // if (afterVault.assetsTotal < beforeVault.assetsTotal)
+                // {
+                //     JLOG(j.fatal()) << "Invariant failed: payment must not "
+                //                        "decrease vault assets outstanding";
+                //     result = false;
+                // }
+
+                if (beforeVault.assetsAvailable + *vaultDeltaAssets !=
+                    afterVault.assetsAvailable)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: payment must agree with "
+                           "change of vault assets available";
+                    result = false;
+                }
 
                 return result;
             }

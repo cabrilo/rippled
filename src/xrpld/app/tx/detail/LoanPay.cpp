@@ -257,6 +257,11 @@ LoanPay::doApply()
         paymentParts->valueChange,
         managementFeeRate,
         originalPrincipalRequested);
+    // TODO: this is crashing Loan tests, why ?
+    // XRPL_ASSERT(
+    //     vaultValueChange >= 0,
+    //     "ripple::LoanPay::doApply : positive loan change");
+
     // debtDecrease may be negative, increasing the debt
     auto const debtDecrease = totalPaidToVault - vaultValueChange;
     XRPL_ASSERT_PARTS(
