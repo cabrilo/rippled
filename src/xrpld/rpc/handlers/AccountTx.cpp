@@ -443,11 +443,10 @@ doAccountTxJson(RPC::JsonContext& context)
             return rpcError(rpcINVALID_PARAMS);
     }
 
-    unsigned int limit;
-    if (auto err = RPC::readLimitField(limit, RPC::Tuning::accountTx, context))
+    if (auto const err =
+            RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
         return *err;
 
-    args.limit = limit;
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward =
         params.isMember(jss::forward) && params[jss::forward].asBool();
