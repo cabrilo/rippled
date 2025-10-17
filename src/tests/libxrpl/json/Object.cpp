@@ -107,17 +107,15 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subs")
 
     {
         Json::Value value;
-        value["h"] = "w";
-        value["f"] = false;
+        value["a"] = "w";
+        value["b"] = false;
         root["obj2"] = value;
     }
-    auto case1 =
-        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"h":"w","f":false}})";
-    auto case2 =
-        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"f":false,"h":"w"}})";
+    auto result =
+        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"a":"w","b":false}})";
 
     writerObject.reset();
-    CHECK((output == case1 || output == case2));
+    CHECK(output == result);
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "subsShort")
@@ -133,11 +131,11 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subsShort")
     root.setObject("obj")["hello"] = "world";
     {
         auto object = root.setObject("obj2");
-        object.set("h", "w");
-        object.set("f", false);
+        object.set("a", "w");
+        object.set("b", false);
     }
     expectResult(
-        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"h":"w","f":false}})");
+        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"a":"w","b":false}})");
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "failureObject")
