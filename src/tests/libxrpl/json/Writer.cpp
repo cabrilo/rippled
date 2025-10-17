@@ -20,6 +20,7 @@
 #include <xrpl/json/Writer.h>
 
 #include <doctest/doctest.h>
+#include <google/protobuf/stubs/port.h>
 
 #include <memory>
 #include <string>
@@ -34,145 +35,134 @@ struct WriterFixture
     std::string output;
     std::unique_ptr<Writer> writer;
 
+    WriterFixture()
+    {
+        writer = std::make_unique<Writer>(stringOutput(output));
+    }
+
     void
-    setup()
+    reset()
     {
         output.clear();
         writer = std::make_unique<Writer>(stringOutput(output));
     }
 
     void
-    expectOutput(std::string const& expected)
+    expectOutput(std::string const& expected) const
     {
-        writer.reset();
         CHECK(output == expected);
+    }
+
+    void checkOutputAndReset(std::string const& expected)
+    {
+        expectOutput(expected);
+        reset();
     }
 };
 
 TEST_CASE_FIXTURE(WriterFixture, "trivial")
 {
-    setup();
     CHECK(output.empty());
-    expectOutput("");
+    checkOutputAndReset("");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "near trivial")
 {
-    setup();
     CHECK(output.empty());
     writer->output(0);
-    expectOutput("0");
+    checkOutputAndReset("0");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "primitives")
 {
-    setup();
     writer->output(true);
-    expectOutput("true");
+    checkOutputAndReset("true");
 
-    setup();
     writer->output(false);
-    expectOutput("false");
+    checkOutputAndReset("false");
 
-    setup();
     writer->output(23);
-    expectOutput("23");
+    checkOutputAndReset("23");
 
-    setup();
     writer->output(23.0);
-    expectOutput("23.0");
+    checkOutputAndReset("23.0");
 
-    setup();
     writer->output(23.5);
-    expectOutput("23.5");
+    checkOutputAndReset("23.5");
 
-    setup();
     writer->output("a string");
-    expectOutput("\"a string\"");
+    checkOutputAndReset("\"a string\"");
 
-    setup();
     writer->output(nullptr);
-    expectOutput("null");
+    checkOutputAndReset("null");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "empty")
 {
-    setup();
     writer->startRoot(Writer::array);
     writer->finish();
-    expectOutput("[]");
+    checkOutputAndReset("[]");
 
-    setup();
     writer->startRoot(Writer::object);
     writer->finish();
-    expectOutput("{}");
+    checkOutputAndReset("{}");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "escaping")
 {
-    setup();
     writer->output("\\");
-    expectOutput("\"\\\\\"");
+    checkOutputAndReset("\"\\\\\"");
 
-    setup();
     writer->output("\"");
-    expectOutput("\"\\\"\"");
+    checkOutputAndReset("\"\\\"\"");
 
-    setup();
     writer->output("\\\"");
-    expectOutput("\"\\\\\\\"\"");
+    checkOutputAndReset("\"\\\\\\\"\"");
 
-    setup();
     writer->output("this contains a \\ in the middle of it.");
-    expectOutput("\"this contains a \\\\ in the middle of it.\"");
+    checkOutputAndReset("\"this contains a \\\\ in the middle of it.\"");
 
-    setup();
     writer->output("\b\f\n\r\t");
-    expectOutput("\"\\b\\f\\n\\r\\t\"");
+    checkOutputAndReset("\"\\b\\f\\n\\r\\t\"");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "array")
 {
-    setup();
     writer->startRoot(Writer::array);
     writer->append(12);
     writer->finish();
-    expectOutput("[12]");
+    checkOutputAndReset("[12]");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "long array")
 {
-    setup();
     writer->startRoot(Writer::array);
     writer->append(12);
     writer->append(true);
     writer->append("hello");
     writer->finish();
-    expectOutput("[12,true,\"hello\"]");
+    checkOutputAndReset("[12,true,\"hello\"]");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "embedded array simple")
 {
-    setup();
     writer->startRoot(Writer::array);
     writer->startAppend(Writer::array);
     writer->finish();
     writer->finish();
-    expectOutput("[[]]");
+    checkOutputAndReset("[[]]");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "object")
 {
-    setup();
     writer->startRoot(Writer::object);
     writer->set("hello", "world");
     writer->finish();
-    expectOutput("{\"hello\":\"world\"}");
+    checkOutputAndReset("{\"hello\":\"world\"}");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "complex object")
 {
-    setup();
     writer->startRoot(Writer::object);
     writer->set("hello", "world");
     writer->startSet(Writer::array, "array");
@@ -184,20 +174,19 @@ TEST_CASE_FIXTURE(WriterFixture, "complex object")
     writer->startSet(Writer::array, "subarray");
     writer->append(23.5);
     writer->finishAll();
-    expectOutput(
+    checkOutputAndReset(
         "{\"hello\":\"world\",\"array\":[true,12,[{\"goodbye\":\"cruel "
         "world.\",\"subarray\":[23.5]}]]}");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "json value")
 {
-    setup();
     Json::Value value(Json::objectValue);
     value["foo"] = 23;
     writer->startRoot(Writer::object);
     writer->set("hello", value);
     writer->finish();
-    expectOutput("{\"hello\":{\"foo\":23}}");
+    checkOutputAndReset("{\"hello\":{\"foo\":23}}");
 }
 
 TEST_SUITE_END();
