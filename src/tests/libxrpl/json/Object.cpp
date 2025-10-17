@@ -48,21 +48,6 @@ struct JsonObjectFixture
         writerObject.reset();
         CHECK(output == expected);
     }
-
-    void
-    expectException(std::function<void()> const& f)
-    {
-        bool threw = false;
-        try
-        {
-            f();
-        }
-        catch (...)
-        {
-            threw = true;
-        }
-        CHECK(threw);
-    }
 };
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "trivial")
@@ -143,17 +128,17 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "failureObject")
     {
         auto& root = makeRoot();
         auto obj = root.setObject("o1");
-        expectException([&]() { root["fail"] = "complete"; });
+        CHECK_THROWS_AS(root["fail"] = "complete", std::logic_error);
     }
     {
         auto& root = makeRoot();
         auto obj = root.setObject("o1");
-        expectException([&]() { root.setObject("o2"); });
+        CHECK_THROWS_AS(root.setObject("o2"), std::logic_error);
     }
     {
         auto& root = makeRoot();
         auto obj = root.setArray("o1");
-        expectException([&]() { root.setArray("o2"); });
+        CHECK_THROWS_AS(root.setArray("o2"), std::logic_error);
     }
 }
 
@@ -163,22 +148,19 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "failureArray")
         auto& root = makeRoot();
         auto array = root.setArray("array");
         auto subarray = array.appendArray();
-        auto fail = [&]() { array.append("fail"); };
-        expectException(fail);
+        CHECK_THROWS_AS(array.append("fail"), std::logic_error);
     }
     {
         auto& root = makeRoot();
         auto array = root.setArray("array");
         auto subarray = array.appendArray();
-        auto fail = [&]() { array.appendArray(); };
-        expectException(fail);
+        CHECK_THROWS_AS(array.appendArray(), std::logic_error);
     }
     {
         auto& root = makeRoot();
         auto array = root.setArray("array");
         auto subarray = array.appendArray();
-        auto fail = [&]() { array.appendObject(); };
-        expectException(fail);
+        CHECK_THROWS_AS(array.appendObject(), std::logic_error);
     }
 }
 
@@ -187,8 +169,7 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "keyFailure")
     auto& root = makeRoot();
     root.set("foo", "bar");
     root.set("baz", 0);
-    auto setAgain = [&]() { root.set("foo", "bar"); };
-    expectException(setAgain);
+    CHECK_THROWS_AS(root.set("foo", "bar"), std::logic_error);
 }
 
 TEST_SUITE_END();
