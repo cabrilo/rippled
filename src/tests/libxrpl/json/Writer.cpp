@@ -175,8 +175,8 @@ TEST_CASE_FIXTURE(WriterFixture, "complex object")
     writer->startSet(Writer::array, "subarray");
     writer->append(23.5);
     writer->finishAll();
-    checkOutputAndReset(R"({"hello":"world","array":[true,12,[{"goodbye":")"
-                        R"(cruel world.","subarray":[23.5]}]]})");
+    checkOutputAndReset(
+        R"({"hello":"world","array":[true,12,[{"goodbye":"cruel world.","subarray":[23.5]}]]})");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "json value")

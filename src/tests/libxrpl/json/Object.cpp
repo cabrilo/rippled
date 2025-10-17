@@ -81,15 +81,14 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "simple")
     root["temperature"] = 98.6;
 
     expectResult(
-        "{\"hello\":\"world\",\"skidoo\":23,\"awake\":false,\"temperature\":98."
-        "6}");
+        R"({"hello":"world","skidoo":23,"awake":false,"temperature":98.6})");
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "oneSub")
 {
     auto& root = makeRoot();
     root.setArray("ar");
-    expectResult("{\"ar\":[]}");
+    expectResult(R"({"ar":[]})");
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "subs")
@@ -113,11 +112,9 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subs")
         root["obj2"] = value;
     }
     auto case1 =
-        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"h\":"
-        "\"w\",\"f\":false}}";
+        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"h":"w","f":false}})";
     auto case2 =
-        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"f\":"
-        "false,\"h\":\"w\"}}";
+        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"f":false,"h":"w"}})";
 
     writerObject.reset();
     CHECK((output == case1 || output == case2));
@@ -140,8 +137,7 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subsShort")
         object.set("f", false);
     }
     expectResult(
-        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"h\":"
-        "\"w\",\"f\":false}}");
+        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"h":"w","f":false}})");
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "failureObject")
@@ -193,13 +189,8 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "keyFailure")
     auto& root = makeRoot();
     root.set("foo", "bar");
     root.set("baz", 0);
-    auto set_again = [&]() { root.set("foo", "bar"); };
-#ifdef NDEBUG
-    set_again();
-    CHECK(true);
-#else
-    expectException(set_again);
-#endif
+    auto setAgain = [&]() { root.set("foo", "bar"); };
+    expectException(setAgain);
 }
 
 TEST_SUITE_END();

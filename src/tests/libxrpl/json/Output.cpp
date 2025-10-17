@@ -49,11 +49,11 @@ TEST_CASE("output cases")
 {
     checkOutput("{}");
     checkOutput("[]");
-    checkOutput("[23,4.25,true,null,\"string\"]");
-    checkOutput("{\"hello\":\"world\"}");
+    checkOutput(R"([23,4.25,true,null,"string"])");
+    checkOutput(R"({"hello":"world"})");
     checkOutput("[{}]");
     checkOutput("[[]]");
-    checkOutput("{\"array\":[{\"12\":23},{},null,false,0.5]}");
+    checkOutput(R"({"array":[{"12":23},{},null,false,0.5]})");
 }
 
 TEST_SUITE_END();
