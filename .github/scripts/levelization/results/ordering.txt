@@ -62,7 +62,6 @@ test.csf > xrpl.basics
 test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.protocol
-test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
 test.jtx > xrpld.app
@@ -138,6 +137,7 @@ test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
 tests.libxrpl > xrpl.basics
+tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics

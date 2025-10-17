@@ -53,7 +53,8 @@ struct WriterFixture
         CHECK(output == expected);
     }
 
-    void checkOutputAndReset(std::string const& expected)
+    void
+    checkOutputAndReset(std::string const& expected)
     {
         expectOutput(expected);
         reset();
@@ -91,7 +92,7 @@ TEST_CASE_FIXTURE(WriterFixture, "primitives")
     checkOutputAndReset("23.5");
 
     writer->output("a string");
-    checkOutputAndReset("\"a string\"");
+    checkOutputAndReset(R"("a string")");
 
     writer->output(nullptr);
     checkOutputAndReset("null");
@@ -111,19 +112,19 @@ TEST_CASE_FIXTURE(WriterFixture, "empty")
 TEST_CASE_FIXTURE(WriterFixture, "escaping")
 {
     writer->output("\\");
-    checkOutputAndReset("\"\\\\\"");
+    checkOutputAndReset(R"("\\")");
 
     writer->output("\"");
-    checkOutputAndReset("\"\\\"\"");
+    checkOutputAndReset(R"("\"")");
 
     writer->output("\\\"");
-    checkOutputAndReset("\"\\\\\\\"\"");
+    checkOutputAndReset(R"("\\\"")");
 
     writer->output("this contains a \\ in the middle of it.");
-    checkOutputAndReset("\"this contains a \\\\ in the middle of it.\"");
+    checkOutputAndReset(R"("this contains a \\ in the middle of it.")");
 
     writer->output("\b\f\n\r\t");
-    checkOutputAndReset("\"\\b\\f\\n\\r\\t\"");
+    checkOutputAndReset(R"("\b\f\n\r\t")");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "array")
@@ -141,7 +142,7 @@ TEST_CASE_FIXTURE(WriterFixture, "long array")
     writer->append(true);
     writer->append("hello");
     writer->finish();
-    checkOutputAndReset("[12,true,\"hello\"]");
+    checkOutputAndReset(R"([12,true,"hello"])");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "embedded array simple")
@@ -158,7 +159,7 @@ TEST_CASE_FIXTURE(WriterFixture, "object")
     writer->startRoot(Writer::object);
     writer->set("hello", "world");
     writer->finish();
-    checkOutputAndReset("{\"hello\":\"world\"}");
+    checkOutputAndReset(R"({"hello":"world"})");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "complex object")
@@ -174,9 +175,8 @@ TEST_CASE_FIXTURE(WriterFixture, "complex object")
     writer->startSet(Writer::array, "subarray");
     writer->append(23.5);
     writer->finishAll();
-    checkOutputAndReset(
-        "{\"hello\":\"world\",\"array\":[true,12,[{\"goodbye\":\"cruel "
-        "world.\",\"subarray\":[23.5]}]]}");
+    checkOutputAndReset(R"({"hello":"world","array":[true,12,[{"goodbye":")"
+                        R"(cruel world.","subarray":[23.5]}]]})");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "json value")
@@ -186,7 +186,7 @@ TEST_CASE_FIXTURE(WriterFixture, "json value")
     writer->startRoot(Writer::object);
     writer->set("hello", value);
     writer->finish();
-    checkOutputAndReset("{\"hello\":{\"foo\":23}}");
+    checkOutputAndReset(R"({"hello":{"foo":23}})");
 }
 
 TEST_SUITE_END();
