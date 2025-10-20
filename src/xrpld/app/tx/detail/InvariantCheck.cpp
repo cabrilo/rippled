@@ -2604,6 +2604,23 @@ ValidVault::finalize(
             },
             vaultAsset.value());
     };
+    auto const deltaAssetsTxAccount = [&]() -> std::optional<Number> {
+        auto ret = deltaAssets(tx[sfAccount]);
+        // Nothing returned or not XRP transaction
+        if (!ret.has_value() || !vaultAsset.native())
+            return ret;
+
+        // Delegated transaction; no need to compensate for fees
+        if (auto const delegate = tx[~sfDelegate];
+            delegate.has_value() && *delegate != tx[sfAccount])
+            return ret;
+
+        *ret += fee.drops();
+        if (*ret == zero)
+            return std::nullopt;
+
+        return ret;
+    };
     auto const deltaShares = [&](AccountID const& id) -> std::optional<Number> {
         auto const it = [&]() {
             if (id == afterVault.pseudoId)
@@ -2774,20 +2791,7 @@ ValidVault::finalize(
 
                 if (!issuerDeposit)
                 {
-                    auto const accountDeltaAssets =
-                        [&]() -> std::optional<Number> {
-                        if (auto ret = deltaAssets(tx[sfAccount]); ret)
-                        {
-                            // Compensate for transaction fee deduced from
-                            // sfAccount
-                            if (vaultAsset.native())
-                                *ret += fee.drops();
-                            if (*ret != zero)
-                                return ret;
-                        }
-                        return std::nullopt;
-                    }();
-
+                    auto const accountDeltaAssets = deltaAssetsTxAccount();
                     if (!accountDeltaAssets)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2909,20 +2913,7 @@ ValidVault::finalize(
 
                 if (!issuerWithdrawal)
                 {
-                    auto const accountDeltaAssets =
-                        [&]() -> std::optional<Number> {
-                        if (auto ret = deltaAssets(tx[sfAccount]); ret)
-                        {
-                            // Compensate for transaction fee deduced from
-                            // sfAccount
-                            if (vaultAsset.native())
-                                *ret += fee.drops();
-                            if (*ret != zero)
-                                return ret;
-                        }
-                        return std::nullopt;
-                    }();
-
+                    auto const accountDeltaAssets = deltaAssetsTxAccount();
                     auto const otherAccountDelta =
                         [&]() -> std::optional<Number> {
                         if (auto const destination = tx[~sfDestination];
