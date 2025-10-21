@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -4830,6 +4831,136 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testDelegate()
+    {
+        using namespace test::jtx;
+
+        Env env(*this, testable_amendments());
+        Account alice{"alice"};
+        Account bob{"bob"};
+        Account carol{"carol"};
+
+        struct CaseArgs
+        {
+            PrettyAsset asset = xrpIssue();
+        };
+
+        auto const xrpBalance = [](Env const& env,
+                                   Account const& account) -> long {
+            auto sle = env.le(keylet::account(account.id()));
+            assert(sle != nullptr);
+            return sle->getFieldAmount(sfBalance).xrp().drops();
+        };
+
+        auto testCase = [&, this](auto test, CaseArgs args = {}) {
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
+
+            Vault vault{env};
+
+            // use different initial amount to distinguish the source balance
+            env.fund(XRP(10000), alice);
+            env.fund(XRP(20000), bob);
+            env.fund(XRP(30000), carol);
+            env.close();
+
+            env(delegate::set(
+                carol,
+                alice,
+                {"Payment",
+                 "VaultCreate",
+                 "VaultSet",
+                 "VaultDelete",
+                 "VaultDeposit",
+                 "VaultWithdraw",
+                 "VaultClawback"}));
+
+            test(env, vault, args.asset);
+        };
+
+        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
+            testcase("delegated vault creation");
+            long startBalance = xrpBalance(env, carol);
+            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == startBalance);
+        });
+
+        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
+            testcase("delegated deposit and withdrawal");
+            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const amount = 1513;
+            auto const baseFee = env.current()->fees().base;
+
+            long startBalance = xrpBalance(env, carol);
+            tx = vault.deposit(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == startBalance - amount);
+
+            tx = vault.withdraw(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount - 1)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == startBalance - 1);
+
+            tx = vault.withdraw(
+                {.depositor = carol, .id = keylet.key, .amount = asset(1)});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == startBalance - baseFee);
+        });
+
+        testCase([&, this](Env& env, Vault& vault, PrettyAsset const& asset) {
+            testcase("delegated withdrawal same as base fee and deletion");
+            auto [tx, keylet] = vault.create({.owner = carol, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const amount = 25537;
+            auto const baseFee = env.current()->fees().base;
+
+            long startBalance = xrpBalance(env, carol);
+            tx = vault.deposit(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount)});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(
+                xrpBalance(env, carol) == startBalance - amount - baseFee);
+
+            tx = vault.withdraw(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(baseFee)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == startBalance - amount);
+
+            tx = vault.withdraw(
+                {.depositor = carol,
+                 .id = keylet.key,
+                 .amount = asset(amount - baseFee)});
+            env(tx, delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(xrpBalance(env, carol) == startBalance - baseFee);
+
+            tx = vault.del({.owner = carol, .id = keylet.key});
+            env(tx, delegate::as(alice));
+            env.close();
+        });
+    }
+
 public:
     void
     run() override
@@ -4847,6 +4978,7 @@ public:
         testFailedPseudoAccount();
         testScaleIOU();
         testRPC();
+        testDelegate();
     }
 };
 
