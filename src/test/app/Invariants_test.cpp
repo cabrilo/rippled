@@ -3038,6 +3038,33 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
+            {"deposit and assets outstanding must add up"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto sleA3 = ac.view().peek(keylet::account(A3.id()));
+                (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
+                ac.view().update(sleA3);
+
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(
+                    ac.view(),
+                    keylet,
+                    args(A2.id(), 10, [&](Adjustments& sample) {
+                        sample.assetsTotal = 11;
+                    }));
+            },
+            XRPAmount{2000},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [&](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfDelegate] = A3.id();
+                    tx[sfFee] = XRPAmount(2000);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
             {"deposit and assets outstanding must add up",
              "deposit and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -3236,6 +3263,33 @@ class Invariants_test : public beast::unit_test::suite
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"withdrawal and assets outstanding must add up"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto sleA3 = ac.view().peek(keylet::account(A3.id()));
+                (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
+                ac.view().update(sleA3);
+
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(
+                    ac.view(),
+                    keylet,
+                    args(A2.id(), -10, [&](Adjustments& sample) {
+                        sample.assetsTotal = -7;
+                    }));
+            },
+            XRPAmount{2000},
+            STTx{
+                ttVAULT_WITHDRAW,
+                [&](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfDelegate] = A3.id();
+                    tx[sfFee] = XRPAmount(2000);
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
