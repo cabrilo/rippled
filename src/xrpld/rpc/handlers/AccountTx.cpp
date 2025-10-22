@@ -435,9 +435,6 @@ doAccountTxJson(RPC::JsonContext& context)
             RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
         return *err;
 
-    if (args.limit == 0)
-        return rpcError(rpcINVALID_PARAMS);
-
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward =
         params.isMember(jss::forward) && params[jss::forward].asBool();

@@ -713,6 +713,9 @@ readLimitField(
         return RPC::expected_field_error(jss::limit, "unsigned integer");
 
     limit = jvLimit.asUInt();
+    if (limit == 0)
+        return RPC::invalid_field_error(jss::limit);
+
     if (!isUnlimited(context.role))
         limit = std::max(range.rmin, std::min(range.rmax, limit));
 
