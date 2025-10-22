@@ -431,21 +431,12 @@ doAccountTxJson(RPC::JsonContext& context)
         return RPC::invalid_field_error(jss::forward);
     }
 
-    // Validate limit field
-    if (params.isMember(jss::limit))
-    {
-        auto const& jvLimit = params[jss::limit];
-        if (!(jvLimit.isUInt() || (jvLimit.isInt() && jvLimit.asInt() >= 0)))
-            return RPC::expected_field_error(jss::limit, "unsigned integer");
-
-        // Check if the value is 0 (invalid)
-        if (jvLimit.asUInt() == 0)
-            return rpcError(rpcINVALID_PARAMS);
-    }
-
     if (auto const err =
             RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
         return *err;
+
+    if (args.limit == 0)
+        return rpcError(rpcINVALID_PARAMS);
 
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward =
