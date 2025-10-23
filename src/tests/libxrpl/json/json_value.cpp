@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/json_errors.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
-#include <xrpl/json/json_errors.h>
 
 #include <doctest/doctest.h>
 
