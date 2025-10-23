@@ -330,15 +330,15 @@ struct Escrow_test : public beast::unit_test::suite
         // allowed:
         auto const seqFt = env.seq("alice");
         env(escrow::create("alice", "bob", XRP(100)),
-            escrow::finish_time(env.now() + 1s),
-            escrow::cancel_time(env.now() + 2s),
+            escrow::finish_time(env.now()),  // Set finish time to now so that
+                                             // we can call finish immediately.
+            escrow::cancel_time(env.now() + 50s),
             fee(baseFee * 150));
         env.close();
-        env(escrow::finish("carol", "alice", seqFt),
-            escrow::condition(escrow::cb1),
-            escrow::fulfillment(escrow::fb1),
-            fee(150 * baseFee));
-        BEAST_EXPECT(env.balance("bob") == XRP(5100));
+        env(escrow::finish("carol", "alice", seqFt), fee(150 * baseFee));
+        BEAST_EXPECT(
+            env.balance("bob") ==
+            XRP(5200));  // 5100 (from last transaction) + 100
     }
 
     void
