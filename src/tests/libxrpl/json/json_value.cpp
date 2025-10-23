@@ -806,8 +806,7 @@ TEST_CASE("conversions")
         // null
         Json::Value val;
         CHECK(val.isNull());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts
+        // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "");
         CHECK(val.asInt() == 0);
         CHECK(val.asUInt() == 0);
@@ -827,12 +826,10 @@ TEST_CASE("conversions")
         // int
         Json::Value val = -1234;
         CHECK(val.isInt());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts
+        // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "-1234");
         CHECK(val.asInt() == -1234);
-        //          CHECK(val.asUInt() == ?);                //
-        //          asserts or throws
+        CHECK_THROWS_AS(val.asUInt(), Json::error);
         CHECK(val.asDouble() == -1234.0);
         CHECK(val.asBool() == true);
 
@@ -849,8 +846,7 @@ TEST_CASE("conversions")
         // uint
         Json::Value val = 1234U;
         CHECK(val.isUInt());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts
+        // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "1234");
         CHECK(val.asInt() == 1234);
         CHECK(val.asUInt() == 1234u);
@@ -870,8 +866,7 @@ TEST_CASE("conversions")
         // real
         Json::Value val = 2.0;
         CHECK(val.isDouble());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts
+        // val.asCString() should trigger an assertion failure
         CHECK(std::regex_match(val.asString(), std::regex("^2\\.0*$")));
         CHECK(val.asInt() == 2);
         CHECK(val.asUInt() == 2u);
@@ -895,8 +890,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "54321");
         CHECK(val.asInt() == 54321);
         CHECK(val.asUInt() == 54321u);
-        //          CHECK(val.asDouble() == 54321.0);        //
-        //          asserts or throws
+        CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == true);
 
         CHECK(!val.isConvertibleTo(Json::nullValue));
@@ -916,8 +910,7 @@ TEST_CASE("conversions")
         CHECK(val.asString() == "");
         CHECK_THROWS_AS(val.asInt(), std::exception);
         CHECK_THROWS_AS(val.asUInt(), std::exception);
-        //          CHECK(val.asDouble() == ?);              //
-        //          asserts or throws
+        CHECK_THROWS_AS(val.asDouble(), std::exception);
         CHECK(val.asBool() == false);
 
         CHECK(val.isConvertibleTo(Json::nullValue));
@@ -933,8 +926,7 @@ TEST_CASE("conversions")
         // bool false
         Json::Value val = false;
         CHECK(val.isBool());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts
+        // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "false");
         CHECK(val.asInt() == 0);
         CHECK(val.asUInt() == 0);
@@ -954,8 +946,7 @@ TEST_CASE("conversions")
         // bool true
         Json::Value val = true;
         CHECK(val.isBool());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts
+        // val.asCString() should trigger an assertion failure
         CHECK(val.asString() == "true");
         CHECK(val.asInt() == 1);
         CHECK(val.asUInt() == 1);
