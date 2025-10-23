@@ -50,14 +50,14 @@ struct JsonObjectFixture
     }
 };
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "trivial")
+TEST_CASE_FIXTURE(JsonObjectFixture, "empty object")
 {
     auto& root = makeRoot();
     (void)root;
     expectResult("{}");
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "simple")
+TEST_CASE_FIXTURE(JsonObjectFixture, "simple object")
 {
     auto& root = makeRoot();
     root["hello"] = "world";
@@ -69,14 +69,14 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "simple")
         R"({"hello":"world","skidoo":23,"awake":false,"temperature":98.6})");
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "oneSub")
+TEST_CASE_FIXTURE(JsonObjectFixture, "object with array")
 {
     auto& root = makeRoot();
     root.setArray("ar");
     expectResult(R"({"ar":[]})");
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "subs")
+TEST_CASE_FIXTURE(JsonObjectFixture, "object with multiple aggregate types")
 {
     auto& root = makeRoot();
     {
@@ -96,14 +96,12 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subs")
         value["b"] = false;
         root["obj2"] = value;
     }
-    auto result =
-        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"a":"w","b":false}})";
 
-    writerObject.reset();
-    CHECK(output == result);
+    expectResult(
+        R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"a":"w","b":false}})");
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "subsShort")
+TEST_CASE_FIXTURE(JsonObjectFixture, "set object in one line")
 {
     auto& root = makeRoot();
     {
@@ -123,7 +121,7 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subsShort")
         R"({"ar":[23,false,23.5],"obj":{"hello":"world"},"obj2":{"a":"w","b":false}})");
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "failureObject")
+TEST_CASE_FIXTURE(JsonObjectFixture, "modify locked object")
 {
     {
         auto& root = makeRoot();
@@ -142,7 +140,7 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "failureObject")
     }
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "failureArray")
+TEST_CASE_FIXTURE(JsonObjectFixture, "modify locked array")
 {
     {
         auto& root = makeRoot();
@@ -164,7 +162,7 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "failureArray")
     }
 }
 
-TEST_CASE_FIXTURE(JsonObjectFixture, "keyFailure")
+TEST_CASE_FIXTURE(JsonObjectFixture, "add duplicate field")
 {
     auto& root = makeRoot();
     root.set("foo", "bar");

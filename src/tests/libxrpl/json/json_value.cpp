@@ -33,7 +33,7 @@ namespace ripple {
 
 TEST_SUITE_BEGIN("json_value");
 
-TEST_CASE("StaticString")
+TEST_CASE("construct and compare Json::StaticString")
 {
     static constexpr char sample[]{"Contents of a Json::StaticString"};
 
@@ -57,7 +57,7 @@ TEST_CASE("StaticString")
     CHECK(test3 != str);
 }
 
-TEST_CASE("types")
+TEST_CASE("different types")
 {
     // Exercise ValueType constructor
     static constexpr Json::StaticString staticStr{"staticStr"};
@@ -211,7 +211,7 @@ TEST_CASE("types")
     }
 }
 
-TEST_CASE("compare")
+TEST_CASE("compare strings")
 {
     auto doCompare = [&](Json::Value const& lhs,
                          Json::Value const& rhs,
@@ -586,10 +586,10 @@ TEST_CASE("bool")
     CHECK(bool(object));
 }
 
-TEST_CASE("bad_json")
+TEST_CASE("bad json")
 {
     char const* s(
-        "{\"method\":\"ledger\",\"params\":[{\"ledger_index\":1e300}]}");
+        R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
 
     Json::Value j;
     Json::Reader r;
@@ -597,7 +597,7 @@ TEST_CASE("bad_json")
     CHECK(r.parse(s, j));
 }
 
-TEST_CASE("edge_cases")
+TEST_CASE("edge cases")
 {
     std::string json;
 
@@ -1015,7 +1015,7 @@ TEST_CASE("conversions")
     }
 }
 
-TEST_CASE("access")
+TEST_CASE("access members")
 {
     Json::Value val;
     CHECK(val.type() == Json::nullValue);
@@ -1108,7 +1108,7 @@ TEST_CASE("access")
     }
 }
 
-TEST_CASE("removeMember")
+TEST_CASE("remove members")
 {
     Json::Value val;
     CHECK(val.removeMember(std::string("member")).type() == Json::nullValue);
@@ -1221,7 +1221,7 @@ TEST_CASE("iterator")
     }
 }
 
-TEST_CASE("nest_limits")
+TEST_CASE("nest limits")
 {
     Json::Reader r;
     {
@@ -1267,7 +1267,7 @@ TEST_CASE("nest_limits")
     }
 }
 
-TEST_CASE("leak")
+TEST_CASE("memory leak")
 {
     // When run with the address sanitizer, this test confirms there is no
     // memory leak with the scenarios below.
