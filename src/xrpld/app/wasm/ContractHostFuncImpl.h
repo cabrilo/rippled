@@ -27,16 +27,15 @@ namespace ripple {
 class ContractHostFunctionsImpl : public WasmHostFunctionsImpl
 {
     ContractContext& contractCtx;
-    TxID _txId;
+    uint256 const contractId = contractCtx.result.contractKeylet.key;
 
 public:
     // Constructor for contract-specific functionality
     ContractHostFunctionsImpl(ContractContext& contractContext)
         : WasmHostFunctionsImpl(
               contractContext.applyCtx,
-              contractContext.result.contractSourceKeylet)
+              contractContext.result.contractKeylet)
         , contractCtx(contractContext)
-        , _txId(contractContext.applyCtx.tx.getTransactionID())
     {
     }
 

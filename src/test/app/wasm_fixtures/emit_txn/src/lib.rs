@@ -36,11 +36,11 @@ mod buffer_sizes {
 // ============================================================================
 
 /// Builds a complete memos array from individual memo buffers
-///
+/// 
 /// # Arguments
 /// * `buffer` - Output buffer for the complete memos array
 /// * `memo_buffers` - Slice of memo data and their lengths
-///
+/// 
 /// # Returns
 /// Total length of the memos array including the end marker
 fn build_memos_array(
@@ -48,24 +48,24 @@ fn build_memos_array(
     memo_buffers: &[(&[u8], usize)]
 ) -> usize {
     let mut position = 0;
-
+    
     // Copy each memo into the array
     for (memo_data, memo_length) in memo_buffers {
         buffer[position..position + memo_length].copy_from_slice(&memo_data[..*memo_length]);
         position += memo_length;
     }
-
+    
     // Terminate the array
     buffer[position] = markers::ARRAY_END;
     position + 1
 }
 
 /// Adds the amount field to the transaction
-///
+/// 
 /// # Arguments
 /// * `txn_index` - Transaction builder index
 /// * `amount_drops` - Amount in drops (192 in this example)
-///
+/// 
 /// # Returns
 /// Result code from add_txn_field
 unsafe fn add_amount_field(txn_index: i32) -> i32 {
@@ -73,28 +73,28 @@ unsafe fn add_amount_field(txn_index: i32) -> i32 {
     const AMOUNT_BYTES: [u8; 8] = [
         0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC0
     ];
-
+    
     add_txn_field(
-        txn_index,
-        sfield::Amount,
-        AMOUNT_BYTES.as_ptr(),
+        txn_index, 
+        sfield::Amount, 
+        AMOUNT_BYTES.as_ptr(), 
         AMOUNT_BYTES.len()
     )
 }
 
 /// Adds the destination field to the transaction
-///
+/// 
 /// # Arguments
 /// * `txn_index` - Transaction builder index
 /// * `destination` - Destination account ID
-///
+/// 
 /// # Returns
 /// Result code from add_txn_field
 unsafe fn add_destination_field(txn_index: i32, destination: &AccountID) -> i32 {
     let mut dest_buffer = [0u8; buffer_sizes::DESTINATION];
     dest_buffer[0] = 0x14; // Length prefix for 20-byte account
     dest_buffer[1..21].copy_from_slice(&destination.0);
-
+    
     add_txn_field(
         txn_index,
         sfield::Destination,
@@ -104,10 +104,10 @@ unsafe fn add_destination_field(txn_index: i32, destination: &AccountID) -> i32 
 }
 
 /// Adds the memos field to the transaction
-///
+/// 
 /// # Arguments
 /// * `txn_index` - Transaction builder index
-///
+/// 
 /// # Returns
 /// Result code from add_txn_field
 unsafe fn add_memos_field(txn_index: i32) -> i32 {
@@ -167,13 +167,13 @@ unsafe fn add_memos_field(txn_index: i32) -> i32 {
 // ============================================================================
 
 /// Main hook function that builds and emits a payment transaction with memos
-///
+/// 
 /// This function:
 /// 1. Retrieves the current contract call context
 /// 2. Builds a payment transaction
 /// 3. Adds amount, destination, and memos fields
 /// 4. Emits the completed transaction
-///
+/// 
 /// # Returns
 /// - 0 on success
 /// - Negative error code on failure

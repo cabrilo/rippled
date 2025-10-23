@@ -287,6 +287,21 @@ ContractCall::doApply()
     if (re.has_value())
     {
         // TODO: better error handling for this conversion
+        // if (allowance > re.value().cost)
+        // {
+        //     allowance -= static_cast<std::uint32_t>(re.value().cost);
+        //     // auto const returnAllowance = [&]() {
+        //     //     ctx_.view().update(
+        //     //         keylet::account(contractAccount),
+        //     //         [allowance](SLE& sle) {
+        //     //             sle.setFieldU32(
+        //     //                 sfBalance,
+        //     //                 sle.getFieldU32(sfBalance) + allowance);
+        //     //         });
+        //     // };
+        //     // returnAllowance();
+        // }
+
         ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
         auto ret = re.value().result;
         if (ret < 0)

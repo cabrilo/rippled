@@ -1959,15 +1959,14 @@ class Contract_test : public beast::unit_test::suite
         // testDeletePreflight(features);
         // testDeletePreclaim(features);
         // testDeleteDoApply(features);
-        // testContractDataSimple(features);
-        // testContractDataNested(features);
-        // testContractDataArray(features);
-        // testContractDataNestedArray(features);
-        // testInstanceParameters(features);
-        // testFunctionParameters(features);
-        // testEmit(features);
+        testContractDataSimple(features);
+        testContractDataNested(features);
+        testContractDataArray(features);
+        testContractDataNestedArray(features);
+        testInstanceParameters(features);
+        testFunctionParameters(features);
+        testEmit(features);
         // testEvents(features);
-        testEasyMode(features);
     }
 
 public:
