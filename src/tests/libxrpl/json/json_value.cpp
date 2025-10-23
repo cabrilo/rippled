@@ -21,6 +21,7 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/json/json_errors.h>
 
 #include <doctest/doctest.h>
 
@@ -588,8 +589,7 @@ TEST_CASE("bool")
 
 TEST_CASE("bad json")
 {
-    char const* s(
-        R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
+    char const* s(R"({"method":"ledger","params":[{"ledger_index":1e300}]})");
 
     Json::Value j;
     Json::Reader r;
@@ -975,12 +975,11 @@ TEST_CASE("conversions")
         // array type
         Json::Value val(Json::arrayValue);
         CHECK(val.isArray());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts CHECK(val.asString() == ?); // asserts or
-        //          throws CHECK(val.asInt() == ?); // asserts or
-        //          throws CHECK(val.asUInt() == ?); // asserts or
-        //          throws CHECK(val.asDouble() == ?); // asserts or
-        //          throws
+        // val.asCString should trigger an assertion failure
+        CHECK_THROWS_AS(val.asString(), Json::error);
+        CHECK_THROWS_AS(val.asInt(), Json::error);
+        CHECK_THROWS_AS(val.asUInt(), Json::error);
+        CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == false);  // empty or not
 
         CHECK(val.isConvertibleTo(Json::nullValue));
@@ -996,12 +995,11 @@ TEST_CASE("conversions")
         // object type
         Json::Value val(Json::objectValue);
         CHECK(val.isObject());
-        //          CHECK(strcmp (val.asCString(), ?) == 0); //
-        //          asserts CHECK(strcmp (val.asCString(), ?) == 0);
-        //          // asserts CHECK(val.asString() == ?); // asserts
-        //          or throws CHECK(val.asInt() == ?); // asserts or
-        //          throws CHECK(val.asUInt() == ?); // asserts or
-        //          throws
+        // val.asCString should trigger an assertion failure
+        CHECK_THROWS_AS(val.asString(), Json::error);
+        CHECK_THROWS_AS(val.asInt(), Json::error);
+        CHECK_THROWS_AS(val.asUInt(), Json::error);
+        CHECK_THROWS_AS(val.asDouble(), Json::error);
         CHECK(val.asBool() == false);  // empty or not
 
         CHECK(val.isConvertibleTo(Json::nullValue));
