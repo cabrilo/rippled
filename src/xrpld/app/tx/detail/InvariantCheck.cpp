@@ -2230,13 +2230,15 @@ ValidVault::visitEntry(
         after != nullptr && (before != nullptr || !isDelete),
         "ripple::ValidVault::visitEntry : some object is available");
 
-    // `Number balance` will capture the difference (delta) between "before"
+    // Number balanceDelta will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
     // invariants can validate that the change in account balances matches the
     // change in vault balances, stored to deltas_ at the end of this function.
-    Number balance{};
+    // This is done even if balanceDelta is zero, but an object was updated.
+    Number balanceDelta{};
 
-    // By default do not add anything to deltas
+    // Append to deltas if sign is non-zero, i.e. an object of an interesting
+    // type has been updated - even if the update did not change the balance.
     std::int8_t sign = 0;
     if (before)
     {
@@ -2249,18 +2251,18 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 beforeMPTs_.push_back(Shares::make(*before));
-                balance = static_cast<std::int64_t>(
+                balanceDelta = static_cast<std::int64_t>(
                     before->getFieldU64(sfOutstandingAmount));
                 sign = 1;
                 break;
             case ltMPTOKEN:
-                balance =
+                balanceDelta =
                     static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount));
                 sign = -1;
                 break;
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                balance = before->getFieldAmount(sfBalance);
+                balanceDelta = before->getFieldAmount(sfBalance);
                 sign = -1;
                 break;
             default:;
@@ -2278,18 +2280,18 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 afterMPTs_.push_back(Shares::make(*after));
-                balance -= Number(static_cast<std::int64_t>(
+                balanceDelta -= Number(static_cast<std::int64_t>(
                     after->getFieldU64(sfOutstandingAmount)));
                 sign = 1;
                 break;
             case ltMPTOKEN:
-                balance -= Number(
+                balanceDelta -= Number(
                     static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount)));
                 sign = -1;
                 break;
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                balance -= Number(after->getFieldAmount(sfBalance));
+                balanceDelta -= Number(after->getFieldAmount(sfBalance));
                 sign = -1;
                 break;
             default:;
@@ -2298,7 +2300,7 @@ ValidVault::visitEntry(
 
     uint256 const key = (before ? before->key() : after->key());
     if (sign != 0)
-        deltas_[key] = balance * sign;
+        deltas_[key] = balanceDelta * sign;
 }
 
 bool

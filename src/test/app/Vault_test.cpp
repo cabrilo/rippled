@@ -4846,11 +4846,15 @@ class Vault_test : public beast::unit_test::suite
             PrettyAsset asset = xrpIssue();
         };
 
-        auto const xrpBalance = [](Env const& env,
-                                   Account const& account) -> long {
+        // Special "error" value to recognize in tests if things fail.
+        // Accidentally it is also 2^31 - 1 and a Mersenne prime.
+        static constexpr long fail = 2'147'483'647;
+        auto const xrpBalance =
+            [this](Env const& env, Account const& account) -> long {
             auto sle = env.le(keylet::account(account.id()));
-            assert(sle != nullptr);
-            return sle->getFieldAmount(sfBalance).xrp().drops();
+            if (BEAST_EXPECT(sle != nullptr))
+                return sle->getFieldAmount(sfBalance).xrp().drops();
+            return fail;
         };
 
         auto testCase = [&, this](auto test, CaseArgs args = {}) {
