@@ -119,10 +119,9 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
 }
 
 std::uint32_t
-EscrowCreate::getFlagsMask(PreflightContext const& ctx)
+EscrowCreate::getFlagsMask(PreflightContext const&)
 {
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+    return tfUniversalMask;
 }
 
 NotTEC
@@ -640,10 +639,9 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 std::uint32_t
-EscrowFinish::getFlagsMask(PreflightContext const& ctx)
+EscrowFinish::getFlagsMask(PreflightContext const&)
 {
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+    return tfUniversalMask;
 }
 
 NotTEC
@@ -1226,10 +1224,9 @@ EscrowFinish::doApply()
 //------------------------------------------------------------------------------
 
 std::uint32_t
-EscrowCancel::getFlagsMask(PreflightContext const& ctx)
+EscrowCancel::getFlagsMask(PreflightContext const&)
 {
-    // 0 means "Allow any flags"
-    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+    return tfUniversalMask;
 }
 
 NotTEC
