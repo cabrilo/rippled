@@ -175,12 +175,6 @@ PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-std::uint32_t
-PayChanCreate::getFlagsMask(PreflightContext const&)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 PayChanCreate::preflight(PreflightContext const& ctx)
 {
@@ -332,12 +326,6 @@ TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
-}
-
-std::uint32_t
-PayChanFund::getFlagsMask(PreflightContext const&)
-{
-    return tfUniversalMask;
 }
 
 NotTEC
