@@ -228,8 +228,6 @@ TEST_CASE("compare strings")
         CHECK((lhs > rhs) == (!(lhsEqRhs || lhsLtRhs)));
     };
 
-#define DO_COMPARE(lhs, rhs, eq, lt) doCompare(lhs, rhs, eq, lt, __LINE__)
-
     Json::Value const null0;
     Json::Value const intNeg1{-1};
     Json::Value const int0{Json::intValue};
@@ -255,7 +253,10 @@ TEST_CASE("compare strings")
         obj1["one"] = 1;
         return obj1;
     }()};
-    //                                 lhs == rhs lhs < rhs
+
+#pragma push_macro("DO_COMPARE")
+    // DO_COMPARE(lhs, rhs, lhsEqualsToRhs lhsLessThanRhs)
+#define DO_COMPARE(lhs, rhs, eq, lt) doCompare(lhs, rhs, eq, lt, __LINE__)
     DO_COMPARE(null0, Json::Value{}, true, false);
     DO_COMPARE(null0, intNeg1, false, true);
     DO_COMPARE(null0, int0, false, true);
@@ -273,7 +274,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(null0, array1, false, true);
     DO_COMPARE(null0, obj0, false, true);
     DO_COMPARE(null0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(intNeg1, null0, false, false);
     DO_COMPARE(intNeg1, intNeg1, true, false);
     DO_COMPARE(intNeg1, int0, false, true);
@@ -291,7 +292,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(intNeg1, array1, false, true);
     DO_COMPARE(intNeg1, obj0, false, true);
     DO_COMPARE(intNeg1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(int0, null0, false, false);
     DO_COMPARE(int0, intNeg1, false, false);
     DO_COMPARE(int0, int0, true, false);
@@ -309,7 +310,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(int0, array1, false, true);
     DO_COMPARE(int0, obj0, false, true);
     DO_COMPARE(int0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(intPos1, null0, false, false);
     DO_COMPARE(intPos1, intNeg1, false, false);
     DO_COMPARE(intPos1, int0, false, false);
@@ -327,7 +328,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(intPos1, array1, false, true);
     DO_COMPARE(intPos1, obj0, false, true);
     DO_COMPARE(intPos1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(uint0, null0, false, false);
     DO_COMPARE(uint0, intNeg1, false, false);
     DO_COMPARE(uint0, int0, true, false);
@@ -345,7 +346,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(uint0, array1, false, true);
     DO_COMPARE(uint0, obj0, false, true);
     DO_COMPARE(uint0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(uint1, null0, false, false);
     DO_COMPARE(uint1, intNeg1, false, false);
     DO_COMPARE(uint1, int0, false, false);
@@ -363,7 +364,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(uint1, array1, false, true);
     DO_COMPARE(uint1, obj0, false, true);
     DO_COMPARE(uint1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(realNeg1, null0, false, false);
     DO_COMPARE(realNeg1, intNeg1, false, false);
     DO_COMPARE(realNeg1, int0, false, false);
@@ -381,7 +382,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(realNeg1, array1, false, true);
     DO_COMPARE(realNeg1, obj0, false, true);
     DO_COMPARE(realNeg1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(real0, null0, false, false);
     DO_COMPARE(real0, intNeg1, false, false);
     DO_COMPARE(real0, int0, false, false);
@@ -399,7 +400,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(real0, array1, false, true);
     DO_COMPARE(real0, obj0, false, true);
     DO_COMPARE(real0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(realPos1, null0, false, false);
     DO_COMPARE(realPos1, intNeg1, false, false);
     DO_COMPARE(realPos1, int0, false, false);
@@ -417,7 +418,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(realPos1, array1, false, true);
     DO_COMPARE(realPos1, obj0, false, true);
     DO_COMPARE(realPos1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(str0, null0, false, false);
     DO_COMPARE(str0, intNeg1, false, false);
     DO_COMPARE(str0, int0, false, false);
@@ -435,7 +436,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(str0, array1, false, true);
     DO_COMPARE(str0, obj0, false, true);
     DO_COMPARE(str0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(str1, null0, false, false);
     DO_COMPARE(str1, intNeg1, false, false);
     DO_COMPARE(str1, int0, false, false);
@@ -453,7 +454,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(str1, array1, false, true);
     DO_COMPARE(str1, obj0, false, true);
     DO_COMPARE(str1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(boolF, null0, false, false);
     DO_COMPARE(boolF, intNeg1, false, false);
     DO_COMPARE(boolF, int0, false, false);
@@ -471,7 +472,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(boolF, array1, false, true);
     DO_COMPARE(boolF, obj0, false, true);
     DO_COMPARE(boolF, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(boolT, null0, false, false);
     DO_COMPARE(boolT, intNeg1, false, false);
     DO_COMPARE(boolT, int0, false, false);
@@ -489,7 +490,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(boolT, array1, false, true);
     DO_COMPARE(boolT, obj0, false, true);
     DO_COMPARE(boolT, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(array0, null0, false, false);
     DO_COMPARE(array0, intNeg1, false, false);
     DO_COMPARE(array0, int0, false, false);
@@ -507,7 +508,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(array0, array1, false, true);
     DO_COMPARE(array0, obj0, false, true);
     DO_COMPARE(array0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(array1, null0, false, false);
     DO_COMPARE(array1, intNeg1, false, false);
     DO_COMPARE(array1, int0, false, false);
@@ -525,7 +526,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(array1, array1, true, false);
     DO_COMPARE(array1, obj0, false, true);
     DO_COMPARE(array1, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(obj0, null0, false, false);
     DO_COMPARE(obj0, intNeg1, false, false);
     DO_COMPARE(obj0, int0, false, false);
@@ -543,7 +544,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(obj0, array1, false, false);
     DO_COMPARE(obj0, obj0, true, false);
     DO_COMPARE(obj0, obj1, false, true);
-    //                                 lhs == rhs lhs < rhs
+
     DO_COMPARE(obj1, null0, false, false);
     DO_COMPARE(obj1, intNeg1, false, false);
     DO_COMPARE(obj1, int0, false, false);
@@ -562,6 +563,7 @@ TEST_CASE("compare strings")
     DO_COMPARE(obj1, obj0, false, false);
     DO_COMPARE(obj1, obj1, true, false);
 #undef DO_COMPARE
+#pragma pop_macro("DO_COMPARE")
 }
 
 TEST_CASE("bool")
