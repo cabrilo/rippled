@@ -2234,11 +2234,8 @@ ValidVault::visitEntry(
     // state (zero if created) and "after" state (zero if destroyed), so the
     // invariants can validate that the change in account balances matches the
     // change in vault balances, stored to deltas_ at the end of this function.
-    // This is done even if balanceDelta is zero, but an object was updated.
     Number balanceDelta{};
 
-    // Append to deltas if sign is non-zero, i.e. an object of an interesting
-    // type has been updated - even if the update did not change the balance.
     std::int8_t sign = 0;
     if (before)
     {
@@ -2299,6 +2296,11 @@ ValidVault::visitEntry(
     }
 
     uint256 const key = (before ? before->key() : after->key());
+    // Append to deltas if sign is non-zero, i.e. an object of an interesting
+    // type has been updated. A transaction may update an object even when
+    // its balance has not changed, e.g. transaction fee equals the amount
+    // transferred to the account. We intentionally do not compare balanceDelta
+    // against zero, to avoid missing such updates.
     if (sign != 0)
         deltas_[key] = balanceDelta * sign;
 }
