@@ -66,5 +66,5 @@ jobs:
         if: ${{ inputs.run_tests }}
         shell: bash
         run: |
-          ./rippled --unittest --unittest-jobs $(nproc)
-          ctest -j $(nproc) --output-on-failure
+          ./rippled --unittest --unittest-jobs $(( $(nproc) - 1 ))
+          ctest -j $(( $(nproc) - 1 )) --output-on-failure

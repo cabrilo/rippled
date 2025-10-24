@@ -98,7 +98,7 @@ jobs:
           cmake \
             --build . \
             --config "${BUILD_TYPE}" \
-            --parallel $(nproc) \
+            --parallel $(( $(nproc) - 1 )) \
             --target "${CMAKE_TARGET}"
 
       - name: Upload rippled artifact
