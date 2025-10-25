@@ -65,8 +65,6 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         // payment
         return normalCost;
 
-    auto const paymentsPerFeeIncrement = 20;
-
     // The fee is based on the potential number of payments, unless the loan is
     // being fully paid off.
     auto const amount = tx[sfAmount];
@@ -93,12 +91,17 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (!brokerSle)
         // Let preclaim worry about the error for this
         return normalCost;
-    auto const vaultSle = view.read(keylet::vault(loanSle->at(sfVaultID)));
+    auto const vaultSle = view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         // Let preclaim worry about the error for this
         return normalCost;
 
     auto const asset = vaultSle->at(sfAsset);
+
+    if (asset != amount.asset())
+        // Let preclaim worry about the error for this
+        return normalCost;
+
     auto const scale = loanSle->at(sfLoanScale);
 
     auto const regularPayment =

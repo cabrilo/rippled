@@ -420,7 +420,7 @@ computeRoundedInterestAndFeeComponents(
         excess == beast::zero ||
             (excess > beast::zero &&
              ((asset.integral() && excess < 3) ||
-              (roundedPeriodicPayment.exponent() - excess.exponent() > 6))),
+              (roundedPeriodicPayment.exponent() - excess.exponent() > 5))),
         "ripple::detail::computeRoundedInterestAndFeeComponents",
         "excess is zero (fee)");
 

@@ -29,6 +29,8 @@ class LoanPay : public Transactor
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
+    static constexpr int paymentsPerFeeIncrement = 5;
+
     explicit LoanPay(ApplyContext& ctx) : Transactor(ctx)
     {
     }
