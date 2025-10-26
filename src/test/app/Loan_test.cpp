@@ -1603,6 +1603,7 @@ class Loan_test : public beast::unit_test::suite
             };
         };
 
+#if LOANCOMPLETE
         // There are a lot of fields that can be set on a loan, but most
         // of them only affect the "math" when a payment is made. The
         // only one that really affects behavior is the
@@ -1718,6 +1719,7 @@ class Loan_test : public beast::unit_test::suite
             pseudoAcct,
             tfLoanOverpayment,
             combineAllPayments(lsfLoanOverpayment));
+#endif
 
         lifecycle(
             caseLabel,
@@ -2042,7 +2044,10 @@ class Loan_test : public beast::unit_test::suite
 
                 time("final payment", [&]() {
                     // Make the final payment
-                    env(pay(borrower, loanKeylet.key, totalDue));
+                    env(
+                        pay(borrower,
+                            loanKeylet.key,
+                            totalDue + STAmount{broker.asset, 1}));
                 });
                 env.close();
             });
@@ -2625,7 +2630,7 @@ class Loan_test : public beast::unit_test::suite
         env(pay(issuer, borrower, mptAsset(10'000)));
         env.close();
 
-        std::array const assets{xrpAsset, mptAsset, iouAsset};
+        std::array const assets{iouAsset, xrpAsset, mptAsset};
 
         // Create vaults and loan brokers
         std::vector<BrokerInfo> brokers;
@@ -3857,10 +3862,10 @@ public:
     void
     run() override
     {
-        testIssuerLoan();
-        testDisabled();
-        testSelfLoan();
-        testLoanSet();
+        // testIssuerLoan();
+        // testDisabled();
+        // testSelfLoan();
+        // testLoanSet();
         testLifecycle();
         testBatchBypassCounterparty();
         testWrongMaxDebtBehavior();

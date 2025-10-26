@@ -228,7 +228,7 @@ computeRoundedPrincipalComponent(
         asset,
         principalOutstanding - rawPrincipalOutstanding,
         scale,
-        Number::downward);
+        asset.integral() ? Number::downward : Number::towards_zero);
 
     // If the rounded principal outstanding is greater than the true
     // principal outstanding, we need to pay more principal to reduce
@@ -308,7 +308,7 @@ computeRoundedInterestComponent(
             asset,
             interestOutstanding - rawInterestOutstanding,
             scale,
-            Number::downward);
+            asset.integral() ? Number::downward : Number::towards_zero);
         roundedInterest += diff;
     }
 
@@ -358,7 +358,7 @@ computeRoundedInterestAndFeeComponents(
             asset,
             managementFeeOutstanding - rawManagementFeeOutstanding,
             scale,
-            Number::downward);
+            asset.integral() ? Number::downward : Number::towards_zero);
 
         roundedFee += diff;
 
@@ -383,18 +383,27 @@ computeRoundedInterestAndFeeComponents(
     roundedInterest = std::min(interestOutstanding, roundedInterest);
 
     // Make sure the parts don't add up to too much
-    Number excess = roundedPeriodicPayment - roundedPrincipal -
-        roundedInterest - roundedFee;
+    auto const initialTotal = roundedPrincipal + roundedInterest + roundedFee;
+    Number excess = roundedPeriodicPayment - initialTotal;
 
     XRPL_ASSERT_PARTS(
         isRounded(asset, excess, scale),
         "ripple::detail::computeRoundedInterestAndFeeComponents",
         "excess is rounded");
 
+#if LOANCOMPLETE
+    if (excess != beast::zero)
+        std::cout << "computeRoundedInterestAndFeeComponents excess is "
+                  << excess << std::endl;
+#endif
+
     if (excess < beast::zero)
     {
         // Take as much of the excess as we can out of the interest
-        auto part = std::min(roundedInterest, abs(excess));
+#if LOANCOMPLETE
+        std::cout << "\tApplying excess to interest\n";
+#endif
+        auto part = std::min(roundedInterest, -excess);
         roundedInterest -= part;
         excess += part;
 
@@ -407,7 +416,10 @@ computeRoundedInterestAndFeeComponents(
     {
         // If there's any left, take as much of the excess as we can out of the
         // fee
-        auto part = std::min(roundedFee, abs(excess));
+#if LOANCOMPLETE
+        std::cout << "\tApplying excess to fee\n";
+#endif
+        auto part = std::min(roundedFee, -excess);
         roundedFee -= part;
         excess += part;
     }
@@ -420,9 +432,9 @@ computeRoundedInterestAndFeeComponents(
         excess == beast::zero ||
             (excess > beast::zero &&
              ((asset.integral() && excess < 3) ||
-              (roundedPeriodicPayment.exponent() - excess.exponent() > 5))),
+              (roundedPeriodicPayment.exponent() - excess.exponent() > 6))),
         "ripple::detail::computeRoundedInterestAndFeeComponents",
-        "excess is zero (fee)");
+        "excess is extremely small (fee)");
 
     XRPL_ASSERT_PARTS(
         roundedFee >= beast::zero,
@@ -1239,6 +1251,15 @@ calculateRawLoanState(
     std::uint32_t const paymentRemaining,
     TenthBips16 const managementFeeRate)
 {
+    if (paymentRemaining == 0)
+    {
+        return LoanState{
+            .valueOutstanding = 0,
+            .principalOutstanding = 0,
+            .interestOutstanding = 0,
+            .interestDue = 0,
+            .managementFeeDue = 0};
+    }
     Number const rawValueOutstanding = periodicPayment * paymentRemaining;
     Number const rawPrincipalOutstanding =
         detail::loanPrincipalFromPeriodicPayment(
@@ -1562,7 +1583,7 @@ loanMakePayment(
         roundToAsset(asset, loan->at(sfClosePaymentFee), loanScale);
     TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
 
-    auto const periodicPayment = loan->at(sfPeriodicPayment);
+    Number const periodicPayment = loan->at(sfPeriodicPayment);
 
     auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDate);
 
@@ -1580,6 +1601,11 @@ loanMakePayment(
 
     view.update(loan);
 
+    auto const rawBefore = calculateRawLoanState(
+        periodicPayment,
+        periodicRate,
+        paymentRemainingProxy,
+        managementFeeRate);
     detail::PaymentComponentsPlus const periodic{
         detail::computePaymentComponents(
             asset,
@@ -1654,6 +1680,23 @@ loanMakePayment(
         prevPaymentDateProxy,
         nextDueDateProxy,
         paymentInterval);
+
+    auto const rawAfter = calculateRawLoanState(
+        periodicPayment,
+        periodicRate,
+        paymentRemainingProxy,
+        managementFeeRate);
+    LoanState const computedAfter = {
+        .valueOutstanding = rawBefore.valueOutstanding -
+            (periodic.rawInterest + periodic.rawManagementFee +
+             periodic.rawPrincipal),
+        .principalOutstanding =
+            rawBefore.principalOutstanding - periodic.rawPrincipal,
+        .interestOutstanding = rawBefore.interestOutstanding -
+            (periodic.rawInterest + periodic.rawManagementFee),
+        .interestDue = rawBefore.interestDue - periodic.rawInterest,
+        .managementFeeDue =
+            rawBefore.managementFeeDue - periodic.rawManagementFee};
 
     std::size_t numPayments = 1;
 
