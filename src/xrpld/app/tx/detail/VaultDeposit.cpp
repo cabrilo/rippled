@@ -157,8 +157,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return ter;
 
     // Asset issuer does not have any balance, they can just create funds by
-    // depositing in the vault.
-    if ((vaultAsset.native() || vaultAsset.getIssuer() != account) &&
+    // depositing in the vault, unless it's MPT asset. In this case the issuer
+    // is limited by MaximumAmount.
+    if ((vaultAsset.native() || vaultAsset.holds<MPTIssue>() ||
+         vaultAsset.getIssuer() != account) &&
         accountHolds(
             ctx.view,
             account,
@@ -295,7 +297,8 @@ VaultDeposit::doApply()
             vaultAccount,
             assetsDeposited,
             j_,
-            WaiveTransferFee::Yes);
+            WaiveTransferFee::Yes,
+            AllowMPTOverflow::No);
         !isTesSuccess(ter))
         return ter;
 
@@ -321,7 +324,8 @@ VaultDeposit::doApply()
             account_,
             sharesCreated,
             j_,
-            WaiveTransferFee::Yes);
+            WaiveTransferFee::Yes,
+            AllowMPTOverflow::No);
         !isTesSuccess(ter))
         return ter;
 
