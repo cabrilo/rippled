@@ -596,8 +596,9 @@ tryOverpayment(
     auto const principalError = principalOutstanding - raw.principalOutstanding;
     auto const feeError = managementFeeOutstanding - raw.managementFeeDue;
 
-    auto const newRawPrincipal =
-        raw.principalOutstanding - overpaymentComponents.trackedPrincipalDelta;
+    auto const newRawPrincipal = std::max(
+        raw.principalOutstanding - overpaymentComponents.trackedPrincipalDelta,
+        Number{0});
 
     auto newLoanProperties = computeLoanProperties(
         asset,
@@ -1136,7 +1137,8 @@ computeOverpaymentComponents(
 {
     XRPL_ASSERT(
         overpayment > 0 && isRounded(asset, overpayment, loanScale),
-        "ripple::loanMakePayment : valid overpayment amount");
+        "ripple::detail::computeOverpaymentComponents : valid overpayment "
+        "amount");
 
     Number const fee = roundToAsset(
         asset, tenthBipsOfValue(overpayment, overpaymentFeeRate), loanScale);
@@ -1655,7 +1657,8 @@ loanMakePayment(
 
     std::size_t numPayments = 1;
 
-    while (totalPaid < amount && paymentRemainingProxy > 0)
+    while (totalPaid < amount && paymentRemainingProxy > 0 &&
+           numPayments < loanMaximumPaymentsPerTransaction)
     {
         // Try to make more payments
         detail::PaymentComponentsPlus const nextPayment{
@@ -1718,13 +1721,18 @@ loanMakePayment(
     // -------------------------------------------------------------
     // overpayment handling
     if (overpaymentAllowed && loan->isFlag(lsfLoanOverpayment) &&
-        paymentRemainingProxy > 0 && nextDueDateProxy && totalPaid < amount)
+        paymentRemainingProxy > 0 && nextDueDateProxy && totalPaid < amount &&
+        numPayments < loanMaximumPaymentsPerTransaction)
     {
         TenthBips32 const overpaymentInterestRate{
             loan->at(sfOverpaymentInterestRate)};
         TenthBips32 const overpaymentFeeRate{loan->at(sfOverpaymentFee)};
 
-        Number const overpayment = amount - totalPaid;
+        // It shouldn't be possible for the overpayment to be greater than
+        // totalValueOutstanding, because that would have been processed as
+        // another normal payment. But cap it just in case.
+        Number const overpayment =
+            std::min(amount - totalPaid, *totalValueOutstandingProxy);
 
         detail::PaymentComponentsPlus const overpaymentComponents =
             detail::computeOverpaymentComponents(
