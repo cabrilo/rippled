@@ -67,8 +67,6 @@ public:
 
 class Check_test : public beast::unit_test::suite
 {
-    FeatureBitset const disallowIncoming{featureDisallowIncoming};
-
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
@@ -125,25 +123,6 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Account const alice{"alice"};
-        {
-            // If the Checks amendment is not enabled, you should not be able
-            // to create, cash, or cancel checks.
-            Env env{*this, features - featureChecks};
-
-            env.fund(XRP(1000), alice);
-            env.close();
-
-            uint256 const checkId{
-                getCheckIndex(env.master, env.seq(env.master))};
-            env(check::create(env.master, alice, XRP(100)), ter(temDISABLED));
-            env.close();
-
-            env(check::cash(alice, checkId, XRP(100)), ter(temDISABLED));
-            env.close();
-
-            env(check::cancel(alice, checkId), ter(temDISABLED));
-            env.close();
-        }
         {
             // If the Checks amendment is enabled all check-related
             // facilities should be available.
@@ -277,24 +256,12 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        // test flag doesn't set unless amendment enabled
-        {
-            Env env{*this, features - disallowIncoming};
-            Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
-            env(fset(alice, asfDisallowIncomingCheck));
-            env.close();
-            auto const sle = env.le(alice);
-            uint32_t flags = sle->getFlags();
-            BEAST_EXPECT(!(flags & lsfDisallowIncomingCheck));
-        }
-
         Account const gw{"gateway"};
         Account const alice{"alice"};
         Account const bob{"bob"};
         IOU const USD{gw["USD"]};
 
-        Env env{*this, features | disallowIncoming};
+        Env env{*this, features};
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
@@ -963,14 +930,8 @@ class Check_test : public beast::unit_test::suite
         }
 
         // Use a regular key and also multisign to cash a check.
-        // featureMultiSignReserve changes the reserve on a SignerList, so
-        // check both before and after.
-        for (auto const& testFeatures :
-             {features - featureMultiSignReserve,
-              features | featureMultiSignReserve})
         {
-            Env env{*this, testFeatures};
-
+            Env env{*this, features};
             env.fund(XRP(1000), gw, alice, bob);
             env.close();
 
@@ -999,11 +960,7 @@ class Check_test : public beast::unit_test::suite
             env(signers(bob, 2, {{bogie, 1}, {demon, 1}}), sig(bobby));
             env.close();
 
-            // If featureMultiSignReserve is enabled then bob's signer list
-            // has an owner count of 1, otherwise it's 4.
-            int const signersCount = {
-                testFeatures[featureMultiSignReserve] ? 1 : 4};
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
 
             // bob uses his regular key to cash a check.
             env(check::cash(bob, chkId1, (USD(1))), sig(bobby));
@@ -1013,7 +970,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
 
             // bob uses multisigning to cash a check.
             XRPAmount const baseFeeDrops{env.current()->fees().base};
@@ -1026,7 +983,7 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 0);
             BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(ownerCount(env, bob) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
         }
     }
 
@@ -1605,13 +1562,8 @@ class Check_test : public beast::unit_test::suite
         Account const zoe{"zoe"};
         IOU const USD{gw["USD"]};
 
-        // featureMultiSignReserve changes the reserve on a SignerList, so
-        // check both before and after.
-        for (auto const& testFeatures :
-             {features - featureMultiSignReserve,
-              features | featureMultiSignReserve})
         {
-            Env env{*this, testFeatures};
+            Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob, zoe);
             env.close();
@@ -1729,16 +1681,11 @@ class Check_test : public beast::unit_test::suite
             env(signers(alice, 2, {{bogie, 1}, {demon, 1}}), sig(alie));
             env.close();
 
-            // If featureMultiSignReserve is enabled then alices's signer list
-            // has an owner count of 1, otherwise it's 4.
-            int const signersCount{
-                testFeatures[featureMultiSignReserve] ? 1 : 4};
-
             // alice uses her regular key to cancel a check.
             env(check::cancel(alice, chkIdReg), sig(alie));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 3);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 3);
+            BEAST_EXPECT(ownerCount(env, alice) == 4);
 
             // alice uses multisigning to cancel a check.
             XRPAmount const baseFeeDrops{env.current()->fees().base};
@@ -1747,18 +1694,18 @@ class Check_test : public beast::unit_test::suite
                 fee(3 * baseFeeDrops));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 2);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
 
             // Creator and destination cancel the remaining unexpired checks.
             env(check::cancel(alice, chkId3), sig(alice));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
 
             env(check::cancel(bob, chkIdNotExp3));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
-            BEAST_EXPECT(ownerCount(env, alice) == signersCount + 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
     }
 
@@ -2633,7 +2580,6 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);
         testTrustLineCreation(sa);
     }

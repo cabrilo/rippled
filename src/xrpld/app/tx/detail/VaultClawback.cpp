@@ -48,6 +48,8 @@ VaultClawback::preflight(PreflightContext const& ctx)
                 << "VaultClawback: only asset issuer can clawback.";
             return temMALFORMED;
         }
+        else if (!amount->representableNumber())
+            return temBAD_AMOUNT;
     }
 
     return tesSUCCESS;
@@ -146,8 +148,11 @@ VaultClawback::doApply()
         amount.asset() == vaultAsset,
         "ripple::VaultClawback::doApply : matching asset");
 
+    // Both of these values are going to be decreased in this transaction,
+    // so the limit doesn't really matter.
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
+
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
@@ -156,7 +161,7 @@ VaultClawback::doApply()
     AccountID holder = tx[sfHolder];
     MPTIssue const share{mptIssuanceID};
     STAmount sharesDestroyed = {share};
-    STAmount assetsRecovered;
+    STAmount assetsRecovered = {vaultAsset};
     try
     {
         if (amount == beast::zero)
@@ -192,6 +197,12 @@ VaultClawback::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
+        // Clawback amounts are allowed to be invalid, but not unrepresentable.
+        // Amounts over the "soft" limit help bring the numbers back into the
+        // valid range.
+        if (!sharesDestroyed.representableNumber() ||
+            !assetsRecovered.representableNumber())
+            return tecPRECISION_LOSS;
 
         // Clamp to maximum.
         if (assetsRecovered > *assetsAvailable)

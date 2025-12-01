@@ -798,17 +798,18 @@ public:
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{*this, FeatureBitset(featureMultiSignReserve, featureFlow)};
+            Env env{
+                *this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](uint256 const& f) {
                 bool const has =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
 
         auto const missingSomeFeatures =
-            testable_amendments() - featureMultiSignReserve - featureFlow;
+            testable_amendments() - featureDynamicMPT - featureTokenEscrow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
@@ -817,7 +818,7 @@ public:
                 env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
                 bool hasnot =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -829,8 +830,10 @@ public:
             // the two supported ones
             Env env{
                 *this,
-                FeatureBitset(
-                    featureMultiSignReserve, featureFlow, *neverSupportedFeat)};
+                FeatureBitset{
+                    featureDynamicMPT,
+                    featureTokenEscrow,
+                    *neverSupportedFeat}};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -838,7 +841,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureMultiSignReserve || f == featureFlow);
+                bool has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -859,7 +862,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
                 bool hasnot =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                    (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }

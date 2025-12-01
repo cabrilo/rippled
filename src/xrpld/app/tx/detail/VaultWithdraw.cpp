@@ -20,7 +20,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    auto const amount = ctx.tx[sfAmount];
+    if (amount <= beast::zero)
+        return temBAD_AMOUNT;
+    if (!amount.representableNumber())
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination];
@@ -121,6 +124,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
         return ret;
 
+    // Cannot return shares to the vault, if the underlying asset was frozen for
+    // the submitter
     if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
         return ret;
 
@@ -153,7 +158,7 @@ VaultWithdraw::doApply()
     Asset const vaultAsset = vault->at(sfAsset);
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
-    STAmount assetsWithdrawn;
+    STAmount assetsWithdrawn = {vaultAsset};
     try
     {
         if (amount.asset() == vaultAsset)
@@ -187,6 +192,12 @@ VaultWithdraw::doApply()
         }
         else
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        // Withdraw amounts are allowed to be invalid, but not unrepresentable.
+        // Amounts over the "soft" limit help bring the numbers back into the
+        // valid range.
+        if (!sharesRedeemed.representableNumber() ||
+            !assetsWithdrawn.representableNumber())
+            return tecPRECISION_LOSS;
     }
     catch (std::overflow_error const&)
     {
@@ -213,6 +224,8 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
+    // These values are only going to decrease, and can't be less than 0, so
+    // there's no need for integer range enforcement.
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);

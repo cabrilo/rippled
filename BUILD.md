@@ -88,6 +88,13 @@ These instructions assume a basic familiarity with Conan and CMake. If you are
 unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
 [Getting Started][3] walkthrough.
 
+#### Conan lockfile
+
+To achieve reproducible dependencies, we use a [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html),
+which has to be updated every time dependencies change.
+
+Please see the [instructions on how to regenerate the lockfile](conan/lockfile/README.md).
+
 #### Default profile
 
 We recommend that you import the provided `conan/profiles/default` profile:
@@ -138,10 +145,12 @@ cd external
 git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
-git sparse-checkout set recipes/snappy
+git sparse-checkout set recipes/ed25519
+git sparse-checkout add recipes/snappy
 git sparse-checkout add recipes/soci
 git fetch origin master
 git checkout master
+conan export --version 2015.03 recipes/ed25519/all
 conan export --version 1.1.10 recipes/snappy/all
 conan export --version 4.0.3 recipes/soci/all
 rm -rf .git
@@ -155,7 +164,8 @@ the new recipe will be automatically pulled from the official Conan Center.
 
 > [!NOTE]
 > You might need to add `--lockfile=""` to your `conan install` command
-> to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
+> to avoid automatic use of the existing `conan.lock` file when you run
+> `conan export` manually on your machine
 
 ### Conan profile tweaks
 
@@ -450,33 +460,6 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    The location of `rippled` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
-#### Conan lockfile
-
-To achieve reproducible dependencies, we use [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html).
-
-The `conan.lock` file in the repository contains a "snapshot" of the current dependencies.
-It is implicitly used when running `conan` commands, you don't need to specify it.
-
-You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
-
-> [!NOTE]
-> Conan uses local cache by default when creating a lockfile.
->
-> To ensure, that lockfile creation works the same way on all developer machines, you should clear the local cache before creating a new lockfile.
-
-To create a new lockfile, run the following commands in the repository root:
-
-```bash
-conan remove '*' --confirm
-rm conan.lock
-# This ensure that xrplf remote is the first to be consulted
-conan remote add --force --index 0 xrplf https://conan.ripplex.io
-conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
-```
-
-> [!NOTE]
-> If some dependencies are exclusive for some OS, you may need to run the last command for them adding `--profile:all <PROFILE>`.
-
 ## Coverage report
 
 The coverage report is intended for developers using compilers GCC
@@ -495,18 +478,18 @@ A coverage report is created when the following steps are completed, in order:
 
 1. `rippled` binary built with instrumentation data, enabled by the `coverage`
    option mentioned above
-2. completed run of unit tests, which populates coverage capture data
+2. completed one or more run of the unit tests, which populates coverage capture data
 3. completed run of the `gcovr` tool (which internally invokes either `gcov` or `llvm-cov`)
    to assemble both instrumentation data and the coverage capture data into a coverage report
 
-The above steps are automated into a single target `coverage`. The instrumented
+The last step of the above is automated into a single target `coverage`. The instrumented
 `rippled` binary can also be used for regular development or testing work, at
 the cost of extra disk space utilization and a small performance hit
-(to store coverage capture). In case of a spurious failure of unit tests, it is
-possible to re-run the `coverage` target without rebuilding the `rippled` binary
-(since it is simply a dependency of the coverage report target). It is also possible
-to select only specific tests for the purpose of the coverage report, by setting
-the `coverage_test` variable in `cmake`
+(to store coverage capture data). Since `rippled` binary is simply a dependency of the
+coverage report target, it is possible to re-run the `coverage` target without
+rebuilding the `rippled` binary. Note, running of the unit tests before the `coverage`
+target is left to the developer. Each such run will append to the coverage data
+collected in the build directory.
 
 The default coverage report format is `html-details`, but the user
 can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake`
@@ -514,11 +497,6 @@ by setting the `coverage_format` variable in `cmake`. It is also possible
 to generate more than one format at a time by setting the `coverage_extra_args`
 variable in `cmake`. The specific command line used to run the `gcovr` tool will be
 displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
-
-By default, the code coverage tool runs parallel unit tests with `--unittest-jobs`
-set to the number of available CPU cores. This may cause spurious test
-errors on Apple. Developers can override the number of unit test jobs with
-the `coverage_test_parallelism` variable in `cmake`.
 
 Example use with some cmake variables set:
 

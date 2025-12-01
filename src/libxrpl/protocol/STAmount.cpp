@@ -255,6 +255,26 @@ STAmount::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
+bool
+STAmount::numberFits() const noexcept
+{
+    // Converting this STAmount to a Number will automatically create a number
+    // with the correct value for `limited_`, because the conversions from
+    // MPTAmount, XRPAmount, and IOUAmount always set the flag correctly.
+    Number n = *this;
+    return n.fits();
+}
+
+bool
+STAmount::representableNumber() const noexcept
+{
+    // Converting this STAmount to a Number will automatically create a number
+    // with the correct value for `limited_`, because the conversions from
+    // MPTAmount, XRPAmount, and IOUAmount always set the flag correctly.
+    Number n = *this;
+    return n.representable();
+}
+
 //------------------------------------------------------------------------------
 //
 // Conversion
@@ -851,6 +871,12 @@ STAmount::canonicalize()
 
         if (getSTNumberSwitchover())
         {
+            // "unchecked" skips the normalization step, so the parameters are
+            // left unmodified. When converting the `Number` back into an
+            // integer, if `mOffset` is 0 (which is the default), the value is
+            // unmodified, so the original integer drops back out, no matter how
+            // large. Precision loss is only an issue if there is an
+            // exponent/offset that requires making the value larger.
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
             auto set = [&](auto const& val) {

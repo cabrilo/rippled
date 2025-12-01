@@ -13,16 +13,58 @@ class Number;
 std::string
 to_string(Number const& amount);
 
+template <typename T>
+constexpr bool
+isPowerOfTen(T value)
+{
+    while (value >= 10 && value % 10 == 0)
+        value /= 10;
+    return value == 1;
+}
+
 class Number
 {
     using rep = std::int64_t;
     rep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};
 
+    // Within Number itself limited_ is informational only. It is not
+    // serialized, transmitted, or used in calculations in any way. It is used
+    // only to indicate that a given Number's absolute value _might_ need to be
+    // less than maxIntValue or maxMantissa.
+    //
+    // It is a one-way switch. Once it's on, it stays on. It is also
+    // transmissible in that any operation (e.g +, /, power, etc.) involving a
+    // Number with this flag will have a result with this flag.
+    //
+    // The flag is checked in the following places:
+    // 1. "fits()" indicates whether the Number fits into the safe range of
+    //    -maxIntValue to maxIntValue.
+    // 2. "representable()" indicates whether the Number can accurately
+    //    represent an integer, meaning that it fits withing the allowable range
+    //    of -maxMantissa to maxMantissa. Values larger than this will be
+    //    truncated before the decimal point, rendering the value inaccurate.
+    // 3. In "operator rep()", which explicitly converts the number into a
+    //    64-bit integer, if the integer value grows larger than maxMantissa
+    //    while it's being computed, AND one of the SingleAssetVault (or
+    //    LendingProtocol, coming soon) amendments are enabled, the operator
+    //    will throw a "std::overflow_error" as if the number had overflowed the
+    //    limits of the 64-bit integer range.
+    //
+    // The Number is usually only going to be checked in transactions, based on
+    // the specific transaction logic, and is entirely context dependent.
+    //
+    bool limited_ = false;
+
 public:
     // The range for the mantissa when normalized
-    constexpr static std::int64_t minMantissa = 1'000'000'000'000'000LL;
-    constexpr static std::int64_t maxMantissa = 9'999'999'999'999'999LL;
+    constexpr static rep minMantissa = 1'000'000'000'000'000LL;
+    static_assert(isPowerOfTen(minMantissa));
+    constexpr static rep maxMantissa = minMantissa * 10 - 1;
+    static_assert(maxMantissa == 9'999'999'999'999'999LL);
+
+    constexpr static rep maxIntValue = maxMantissa / 100;
+    static_assert(maxIntValue == 99'999'999'999'999LL);
 
     // The range for the exponent when normalized
     constexpr static int minExponent = -32768;
@@ -35,14 +77,52 @@ public:
 
     explicit constexpr Number() = default;
 
-    Number(rep mantissa);
-    explicit Number(rep mantissa, int exponent);
+    Number(rep mantissa, bool limited = false);
+    explicit Number(rep mantissa, int exponent, bool limited = false);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
+    constexpr Number(Number const& other) = default;
+    constexpr Number(Number&& other) = default;
+
+    ~Number() = default;
+
+    constexpr Number&
+    operator=(Number const& other);
+    constexpr Number&
+    operator=(Number&& other);
 
     constexpr rep
     mantissa() const noexcept;
     constexpr int
     exponent() const noexcept;
+
+    // Sets the limited_ flag. See the description of limited for how it works.
+    // Note that the flag can only change from false to true, not from true to
+    // false.
+    void
+    setLimited(bool limited);
+
+    // Gets the current value of the limited_ flag. See the description of
+    // limited for how it works.
+    bool
+    getLimited() const noexcept;
+
+    // 1. "fits()" indicates whether the Number fits into the safe range of
+    //    -maxIntValue to maxIntValue.
+    bool
+    fits() const noexcept;
+    bool
+    // 2. "representable()" indicates whether the Number can accurately
+    //    represent an integer, meaning that it fits withing the allowable range
+    //    of -maxMantissa to maxMantissa. Values larger than this will be
+    //    truncated before the decimal point, rendering the value inaccurate.
+    representable() const noexcept;
+    /// Combines setLimited(bool) and fits()
+    bool
+    fits(bool limited);
+    /// Because this function is const, it should only be used for one-off
+    /// checks
+    bool
+    fits(bool limited) const;
 
     constexpr Number
     operator+() const noexcept;
@@ -78,6 +158,13 @@ public:
      *  are explicit. This design encourages and facilitates the use of Number
      *  as the preferred type for floating point arithmetic as it makes
      *  "mixed mode" more convenient, e.g. MPTAmount + Number.
+
+         3. In "operator rep()", which explicitly converts the number into a
+            64-bit integer, if the integer value grows larger than maxMantissa
+            while it's being computed, AND one of the SingleAssetVault (or
+            LendingProtocol, coming soon) amendments are enabled, the operator
+            will throw a "std::overflow_error" as if the number had overflowed
+            the limits of the 64-bit integer range.
      */
     explicit
     operator rep() const;  // round to nearest, even on tie
@@ -181,8 +268,30 @@ public:
     static rounding_mode
     setround(rounding_mode mode);
 
+    // Thread local integer overflow control. See overflowLargeIntegers_ for
+    // more info.
+    static bool
+    getEnforceIntegerOverflow();
+    // Thread local integer overflow control. See overflowLargeIntegers_ for
+    // more info.
+    static void
+    setEnforceIntegerOverflow(bool enforce);
+
 private:
     static thread_local rounding_mode mode_;
+
+    // This flag defaults to false. It is set and cleared by
+    // "setCurrentTransactionRules" in Rules.cpp. It will be set to true if and
+    // only if any of the SingleAssetVault or LendingProtocol amendments are
+    // enabled.
+    //
+    // If set, then any explicit conversions from Number to rep (which is
+    // std::int64_t) of Numbers that are not representable (which means their
+    // magnitude is larger than maxMantissa, and thus they will lose integer
+    // precision) will throw a std::overflow_error. Note that this coversion
+    // will already throw an overflow error if the Number is larger 2^63.
+    // See also "operator rep()".
+    static thread_local bool overflowLargeIntegers_;
 
     void
     normalize();
@@ -197,14 +306,44 @@ inline constexpr Number::Number(rep mantissa, int exponent, unchecked) noexcept
 {
 }
 
-inline Number::Number(rep mantissa, int exponent)
-    : mantissa_{mantissa}, exponent_{exponent}
+inline Number::Number(rep mantissa, int exponent, bool limited)
+    : mantissa_{mantissa}, exponent_{exponent}, limited_(limited)
 {
     normalize();
 }
 
-inline Number::Number(rep mantissa) : Number{mantissa, 0}
+inline Number::Number(rep mantissa, bool limited) : Number{mantissa, 0, limited}
 {
+}
+
+constexpr Number&
+Number::operator=(Number const& other)
+{
+    if (this != &other)
+    {
+        mantissa_ = other.mantissa_;
+        exponent_ = other.exponent_;
+        if (!limited_)
+            limited_ = other.limited_;
+    }
+
+    return *this;
+}
+
+constexpr Number&
+Number::operator=(Number&& other)
+{
+    if (this != &other)
+    {
+        // std::move doesn't really do anything for these types, but
+        // this is future-proof in case the types ever change
+        mantissa_ = std::move(other.mantissa_);
+        exponent_ = std::move(other.exponent_);
+        if (!limited_)
+            limited_ = std::move(other.limited_);
+    }
+
+    return *this;
 }
 
 inline constexpr Number::rep
@@ -217,6 +356,20 @@ inline constexpr int
 Number::exponent() const noexcept
 {
     return exponent_;
+}
+
+inline void
+Number::setLimited(bool limited)
+{
+    if (limited_)
+        return;
+    limited_ = limited;
+}
+
+inline bool
+Number::getLimited() const noexcept
+{
+    return limited_;
 }
 
 inline constexpr Number
@@ -402,6 +555,32 @@ public:
 
     NumberRoundModeGuard&
     operator=(NumberRoundModeGuard const&) = delete;
+};
+
+// Sets the EnforceIntegerOverflow flag and restores the old value when it
+// leaves scope.  Since Number doesn't have that facility, we'll build it here.
+//
+// This class may only end up needed in tests
+class NumberIntegerOverflowGuard
+{
+    bool const saved_;
+
+public:
+    explicit NumberIntegerOverflowGuard(bool enforce) noexcept
+        : saved_{Number::getEnforceIntegerOverflow()}
+    {
+        Number::setEnforceIntegerOverflow(enforce);
+    }
+
+    ~NumberIntegerOverflowGuard()
+    {
+        Number::setEnforceIntegerOverflow(saved_);
+    }
+
+    NumberIntegerOverflowGuard(NumberIntegerOverflowGuard const&) = delete;
+
+    NumberIntegerOverflowGuard&
+    operator=(NumberIntegerOverflowGuard const&) = delete;
 };
 
 }  // namespace ripple

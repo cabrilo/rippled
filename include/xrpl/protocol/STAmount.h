@@ -146,6 +146,24 @@ public:
     STAmount(MPTAmount const& amount, MPTIssue const& mptIssue);
     operator Number() const;
 
+    // Determines if the "Number" representation of the amount can fit within
+    // the Number's soft range limits. Converts the amount to a Number, using
+    // the automatic conversion rules defined in "operator Number()", and in
+    // "XRPAmount::operator Number()", "MPTAmount::operator Number()", and
+    // "IOUAmount::operator Number()", then returns the result of
+    // "Number::fits()". See "Number::fits()" for more information.
+    bool
+    numberFits() const noexcept;
+    // Determines if the "Number" representation of the amount can fit within
+    // the Number's hard range limits. Converts the amount to a Number, using
+    // the automatic conversion rules defined in "operator Number()", and in
+    // "XRPAmount::operator Number()", "MPTAmount::operator Number()", and
+    // "IOUAmount::operator Number()", then returns the result of
+    // "Number::representable()". See "Number::representable()" for more
+    // information.
+    bool
+    representableNumber() const noexcept;
+
     //--------------------------------------------------------------------------
     //
     // Observers
@@ -154,6 +172,9 @@ public:
 
     int
     exponent() const noexcept;
+
+    bool
+    integral() const noexcept;
 
     bool
     native() const noexcept;
@@ -436,6 +457,12 @@ STAmount::exponent() const noexcept
 }
 
 inline bool
+STAmount::integral() const noexcept
+{
+    return mAsset.integral();
+}
+
+inline bool
 STAmount::native() const noexcept
 {
     return mAsset.native();
@@ -553,7 +580,7 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = native() ? 0 : -100;
+    mOffset = integral() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }

@@ -726,6 +726,161 @@ public:
     }
 
     void
+    testInteger()
+    {
+        testcase("Integer enforcement");
+
+        using namespace std::string_literals;
+
+        auto checkInt = [this](
+                            Number const& a,
+                            std::int64_t expected,
+                            std::string const& ex = {}) {
+            try
+            {
+                BEAST_EXPECT(static_cast<std::int64_t>(a) == expected);
+            }
+            catch (std::overflow_error const& e)
+            {
+                BEAST_EXPECTS(
+                    ex.empty() || e.what() == ex,
+                    to_string(a) + ": " + e.what());
+            }
+        };
+        {
+            Number a{100};
+            BEAST_EXPECT(!a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 100);
+            a = Number{1, 30};
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 0, "Number::operator rep() overflow");
+            a = -100;
+            BEAST_EXPECT(!a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, -100);
+            // If there's any interaction with an integer, the value
+            // becomes an integer. This is not always what the value is
+            // being used for, so it's up to the context to check or not
+            // check whether the number is a _valid_ integer.
+            a += Number{37, 2, true};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 3600);
+        }
+        {
+            Number a{100, true};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 100);
+            a = Number{1, 15};
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 1'000'000'000'000'000);
+            // The false in the assigned value does not override the
+            // flag in "a"
+            a = Number{1, 30, false};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            checkInt(a, 0, "Number::operator rep() overflow");
+            a = -100;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, -100);
+            a *= Number{1, 13};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, -1'000'000'000'000'000);
+            a *= Number{1, 3};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            checkInt(a, -1'000'000'000'000'000'000);
+            // Intermittent value precision can be lost, but the result
+            // will be rounded, so that's fine.
+            a /= Number{1, 5};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, -10'000'000'000'000);
+            a = Number{1, 14} - 3;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 99'999'999'999'997);
+            a += 1;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 99'999'999'999'998);
+            ++a;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 99'999'999'999'999);
+            a++;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 100'000'000'000'000);
+            a = Number{5, true};
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(a.fits());
+            BEAST_EXPECT(a.representable());
+            checkInt(a, 5);
+
+            auto const maxInt = std::numeric_limits<std::int64_t>::max();
+            a = maxInt;
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            BEAST_EXPECT(to_string(a) == "9223372036854776e3");
+            checkInt(a, 0, "Number::operator rep() overflow");
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(
+                    a, 0, "Number::operator rep() overflow unrepresentable");
+            }
+
+            // Same number, but using the "unchecked" option
+            a = Number{maxInt, 0, Number::unchecked{}};
+            // 1152921504606846975
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            // Because "a" is not normalized, "to_string" returns the
+            // wrong answer.
+            BEAST_EXPECT(to_string(a) == "9223372036854775.807");
+            checkInt(a, maxInt);
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(a, maxInt);
+            }
+
+            // Use a smaller number that doesn't overflow int64 when rounded up
+            a = maxInt / 10;
+            // 922337203685477580
+            BEAST_EXPECT(a.getLimited());
+            BEAST_EXPECT(!a.fits());
+            BEAST_EXPECT(!a.representable());
+            checkInt(a, ((maxInt / 1000) + 1) * 100);
+            {
+                NumberIntegerOverflowGuard og(true);
+                checkInt(
+                    a, 0, "Number::operator rep() overflow unrepresentable");
+            }
+        }
+    }
+
+    void
     run() override
     {
         testZero();
@@ -746,6 +901,7 @@ public:
         test_inc_dec();
         test_toSTAmount();
         test_truncate();
+        testInteger();
     }
 };
 

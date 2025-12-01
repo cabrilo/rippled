@@ -168,6 +168,13 @@ class MPToken_test : public beast::unit_test::suite
             Json::Value const result = env.rpc("tx", txHash)[jss::result];
             BEAST_EXPECT(
                 result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
+
+            auto const issuanceID = mptAlice.issuanceID();
+            if (auto const le = env.le(keylet::mptIssuance(issuanceID));
+                BEAST_EXPECT(le))
+            {
+                BEAST_EXPECT(le->at(sfMaximumAmount) == maxMPTokenAmount);
+            }
         }
 
         if (features[featureSingleAssetVault])
@@ -1670,6 +1677,11 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, maxMPTokenAmount);
             BEAST_EXPECT(
                 mptAlice.checkMPTokenOutstandingAmount(maxMPTokenAmount));
+            STAmount const expectedAmount{
+                mptAlice.issuanceID(), maxMPTokenAmount};
+            // the value was not truncated or rounded
+            BEAST_EXPECT(expectedAmount.mantissa() == maxMPTokenAmount);
+            env.require(balance(bob, expectedAmount));
 
             // payment between the holders
             mptAlice.pay(bob, carol, maxMPTokenAmount);

@@ -143,7 +143,7 @@ public:
 
     operator Number() const noexcept
     {
-        return drops();
+        return {drops(), true};
     }
 
     /** Return the sign of the amount */

@@ -1028,12 +1028,7 @@ ValidNewAccountRoot::finalize(
             return false;
         }
 
-        std::uint32_t const startingSeq =                     //
-            pseudoAccount                                     //
-            ? 0                                               //
-            : view.rules().enabled(featureDeletableAccounts)  //
-                ? view.seq()                                  //
-                : 1;
+        std::uint32_t const startingSeq = pseudoAccount ? 0 : view.seq();
 
         if (accountSeq_ != startingSeq)
         {
@@ -2180,6 +2175,13 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    if (self.asset.integral())
+    {
+        self.assetsTotal.setLimited(true);
+        self.assetsAvailable.setLimited(true);
+        self.assetsMaximum.setLimited(true);
+        self.lossUnrealized.setLimited(true);
+    }
     return self;
 }
 
@@ -2412,6 +2414,19 @@ ValidVault::finalize(
     XRPL_ASSERT(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
         "ripple::ValidVault::finalize : single vault operation");
+
+    if (!afterVault.assetsTotal.representable() ||
+        !afterVault.assetsAvailable.representable() ||
+        !afterVault.assetsMaximum.representable() ||
+        !afterVault.lossUnrealized.representable())
+    {
+        JLOG(j.fatal()) << "Invariant failed: vault overflowed maximum current "
+                           "representable integer value";
+        XRPL_ASSERT(
+            enforce,
+            "ripple::ValidVault::finalize : vault integer limit invariant");
+        return !enforce;  // That's all we can do here
+    }
 
     auto const updatedShares = [&]() -> std::optional<Shares> {
         // At this moment we only know that a vault is being updated and there

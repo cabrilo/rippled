@@ -23,6 +23,7 @@ using uint128_t = __uint128_t;
 namespace ripple {
 
 thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
+thread_local bool Number::overflowLargeIntegers_ = false;
 
 Number::rounding_mode
 Number::getround()
@@ -34,6 +35,18 @@ Number::rounding_mode
 Number::setround(rounding_mode mode)
 {
     return std::exchange(mode_, mode);
+}
+
+bool
+Number::getEnforceIntegerOverflow()
+{
+    return overflowLargeIntegers_;
+}
+
+void
+Number::setEnforceIntegerOverflow(bool enforce)
+{
+    std::exchange(overflowLargeIntegers_, enforce);
 }
 
 // Guard
@@ -164,9 +177,8 @@ Number::normalize()
         return;
     }
     bool const negative = (mantissa_ < 0);
-    auto m = static_cast<std::make_unsigned_t<rep>>(mantissa_);
-    if (negative)
-        m = -m;
+    auto m = static_cast<std::make_unsigned_t<rep>>(
+        negative ? -mantissa_ : mantissa_);
     while ((m < minMantissa) && (exponent_ > minExponent))
     {
         m *= 10;
@@ -207,9 +219,52 @@ Number::normalize()
         mantissa_ = -mantissa_;
 }
 
+bool
+Number::fits() const noexcept
+{
+    return fits(limited_);
+}
+
+bool
+Number::fits(bool limited)
+{
+    setLimited(limited);
+    return fits();
+}
+
+bool
+Number::fits(bool limited) const
+{
+    if (!limited)
+        return true;
+    static Number const max = maxIntValue;
+    static Number const maxNeg = -max;
+    // Avoid making a copy
+    if (mantissa_ < 0)
+        return *this >= maxNeg;
+    return *this <= max;
+}
+
+bool
+Number::representable() const noexcept
+{
+    if (!limited_)
+        return true;
+    static Number const max = maxMantissa;
+    static Number const maxNeg = -max;
+    // Avoid making a copy
+    if (mantissa_ < 0)
+        return *this >= maxNeg;
+    return *this <= max;
+}
+
 Number&
 Number::operator+=(Number const& y)
 {
+    // The strictest setting prevails
+    if (!limited_)
+        limited_ = y.limited_;
+
     if (y == Number{})
         return *this;
     if (*this == Number{})
@@ -356,6 +411,10 @@ divu10(uint128_t& u)
 Number&
 Number::operator*=(Number const& y)
 {
+    // The strictest setting prevails
+    if (!limited_)
+        limited_ = y.limited_;
+
     if (*this == Number{})
         return *this;
     if (y == Number{})
@@ -428,6 +487,10 @@ Number::operator*=(Number const& y)
 Number&
 Number::operator/=(Number const& y)
 {
+    // The strictest setting prevails
+    if (!limited_)
+        limited_ = y.limited_;
+
     if (y == Number{})
         throw std::overflow_error("Number: divide by 0");
     if (*this == Number{})
@@ -477,6 +540,9 @@ Number::operator rep() const
         }
         for (; offset > 0; --offset)
         {
+            if (Number::overflowLargeIntegers_ && drops > maxMantissa / 10)
+                throw std::overflow_error(
+                    "Number::operator rep() overflow unrepresentable");
             if (drops > std::numeric_limits<decltype(drops)>::max() / 10)
                 throw std::overflow_error("Number::operator rep() overflow");
             drops *= 10;
