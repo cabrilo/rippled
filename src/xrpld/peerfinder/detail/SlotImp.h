@@ -1,5 +1,4 @@
-#ifndef XRPL_PEERFINDER_SLOTIMP_H_INCLUDED
-#define XRPL_PEERFINDER_SLOTIMP_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -9,7 +8,7 @@
 #include <atomic>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 namespace PeerFinder {
 
 class SlotImp : public Slot
@@ -25,10 +24,7 @@ public:
         clock_type& clock);
 
     // outbound
-    SlotImp(
-        beast::IP::Endpoint const& remote_endpoint,
-        bool fixed,
-        clock_type& clock);
+    SlotImp(beast::IP::Endpoint const& remote_endpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override
@@ -176,7 +172,7 @@ public:
     // DEPRECATED public data members
 
     // Tells us if we checked the connection. Outbound connections
-    // are always considered checked since we successfuly connected.
+    // are always considered checked since we successfully connected.
     bool checked;
 
     // Set to indicate if the connection can receive incoming at the
@@ -195,6 +191,4 @@ public:
 };
 
 }  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

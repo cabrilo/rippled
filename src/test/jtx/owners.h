@@ -1,15 +1,14 @@
-#ifndef XRPL_TEST_JTX_OWNERS_H_INCLUDED
-#define XRPL_TEST_JTX_OWNERS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -37,15 +36,14 @@ private:
     std::uint32_t value_;
 
 public:
-    owner_count(Account const& account, std::uint32_t value)
-        : account_(account), value_(value)
+    owner_count(Account const& account, std::uint32_t value) : account_(account), value_(value)
     {
     }
 
     void
     operator()(Env& env) const
     {
-        detail::owned_count_helper(env, account_.id(), Type, value_);
+        xrpl::detail::owned_count_helper(env, account_.id(), Type, value_);
     }
 };
 
@@ -57,8 +55,7 @@ private:
     std::uint32_t value_;
 
 public:
-    owners(Account const& account, std::uint32_t value)
-        : account_(account), value_(value)
+    owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
     {
     }
 
@@ -72,8 +69,9 @@ using lines = owner_count<ltRIPPLE_STATE>;
 /** Match the number of offers in the account's owner directory */
 using offers = owner_count<ltOFFER>;
 
+/** Match the number of MPToken in the account's owner directory */
+using mptokens = owner_count<ltMPTOKEN>;
+
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

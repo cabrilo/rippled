@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_FLAGS_H_INCLUDED
-#define XRPL_TEST_JTX_FLAGS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -7,13 +6,13 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class flags_helper
 {
 protected:
-    std::uint32_t mask_;
+    std::uint32_t mask_{0};
 
 private:
     void
@@ -80,7 +79,7 @@ private:
 
 protected:
     template <class... Args>
-    flags_helper(Args... args) : mask_(0)
+    flags_helper(Args... args)
     {
         set_args(args...);
     }
@@ -105,15 +104,14 @@ fclear(Account const& account, std::uint32_t off)
 }
 
 /** Match set account flags */
-class flags : private detail::flags_helper
+class flags : private xrpl::detail::flags_helper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    flags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    flags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -122,15 +120,14 @@ public:
 };
 
 /** Match clear account flags */
-class nflags : private detail::flags_helper
+class nflags : private xrpl::detail::flags_helper
 {
 private:
     Account account_;
 
 public:
     template <class... Args>
-    nflags(Account const& account, Args... args)
-        : flags_helper(args...), account_(account)
+    nflags(Account const& account, Args... args) : flags_helper(args...), account_(account)
     {
     }
 
@@ -140,6 +137,4 @@ public:
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

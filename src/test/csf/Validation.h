@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_CSF_VALIDATION_H_INCLUDED
-#define XRPL_TEST_CSF_VALIDATION_H_INCLUDED
+#pragma once
 
 #include <test/csf/ledgers.h>
 
@@ -9,7 +8,7 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace csf {
 
@@ -130,7 +129,7 @@ public:
     Validation const&
     unwrap() const
     {
-        // For the rippled implementation in which RCLValidation wraps
+        // For the xrpld implementation in which RCLValidation wraps
         // STValidation, the csf::Validation has no more specific type it
         // wraps, so csf::Validation unwraps to itself
         return *this;
@@ -140,15 +139,7 @@ public:
     asTie() const
     {
         // trusted is a status set by the receiver, so it is not part of the tie
-        return std::tie(
-            ledgerID_,
-            seq_,
-            signTime_,
-            seenTime_,
-            key_,
-            nodeID_,
-            loadFee_,
-            full_);
+        return std::tie(ledgerID_, seq_, signTime_, seenTime_, key_, nodeID_, loadFee_, full_);
     }
     bool
     operator==(Validation const& o) const
@@ -183,6 +174,4 @@ public:
 
 }  // namespace csf
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

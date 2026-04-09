@@ -1,5 +1,4 @@
-#ifndef XRPL_RPC_MPTOKENISSUANCEID_H_INCLUDED
-#define XRPL_RPC_MPTOKENISSUANCEID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -9,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace RPC {
 
@@ -26,7 +25,7 @@ canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta);
 
 void
@@ -37,6 +36,4 @@ insertMPTokenIssuanceID(
 /** @} */
 
 }  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

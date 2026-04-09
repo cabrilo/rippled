@@ -18,56 +18,72 @@
 #include <optional>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 Currency
-ammLPTCurrency(Currency const& cur1, Currency const& cur2)
+ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
     std::int32_t constexpr AMMCurrencyCode = 0x03;
-    auto const [minC, maxC] = std::minmax(cur1, cur2);
-    auto const hash = sha512Half(minC, maxC);
+    auto const& [minA, maxA] = std::minmax(asset1, asset2);
+    uint256 const hash = std::visit(
+        [](auto&& issue1, auto&& issue2) {
+            auto fromIss = []<ValidIssueType T>(T const& issue) {
+                if constexpr (std::is_same_v<T, Issue>)
+                    return issue.currency;
+                if constexpr (std::is_same_v<T, MPTIssue>)
+                    return issue.getMptID();
+            };
+            return sha512Half(fromIss(issue1), fromIss(issue2));
+        },
+        minA.value(),
+        maxA.value());
     Currency currency;
     *currency.begin() = AMMCurrencyCode;
-    std::copy(
-        hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
+    std::copy(hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
     return currency;
 }
 
 Issue
-ammLPTIssue(
-    Currency const& cur1,
-    Currency const& cur2,
-    AccountID const& ammAccountID)
+ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccountID)
 {
-    return Issue(ammLPTCurrency(cur1, cur2), ammAccountID);
+    return Issue(ammLPTCurrency(asset1, asset2), ammAccountID);
 }
 
 NotTEC
-invalidAMMAsset(
-    Issue const& issue,
-    std::optional<std::pair<Issue, Issue>> const& pair)
+invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const& pair)
 {
-    if (badCurrency() == issue.currency)
-        return temBAD_CURRENCY;
-    if (isXRP(issue) && issue.account.isNonZero())
-        return temBAD_ISSUER;
-    if (pair && issue != pair->first && issue != pair->second)
+    auto const err = asset.visit(
+        [](MPTIssue const& issue) -> std::optional<NotTEC> {
+            if (issue.getIssuer() == beast::zero)
+                return temBAD_MPT;
+            return std::nullopt;
+        },
+        [](Issue const& issue) -> std::optional<NotTEC> {
+            if (badCurrency() == issue.currency)
+                return temBAD_CURRENCY;
+            if (isXRP(issue) && issue.getIssuer().isNonZero())
+                return temBAD_ISSUER;
+            return std::nullopt;
+        });
+    if (err)
+        return *err;
+    if (pair && asset != pair->first && asset != pair->second)
         return temBAD_AMM_TOKENS;
     return tesSUCCESS;
 }
 
 NotTEC
 invalidAMMAssetPair(
-    Issue const& issue1,
-    Issue const& issue2,
-    std::optional<std::pair<Issue, Issue>> const& pair)
+    Asset const& asset1,
+    Asset const& asset2,
+    std::optional<std::pair<Asset, Asset>> const& pair)
 {
-    if (issue1 == issue2)
+    if (asset1 == asset2)
         return temBAD_AMM_TOKENS;
-    if (auto const res = invalidAMMAsset(issue1, pair))
+    if (auto const res = invalidAMMAsset(asset1, pair))
         return res;
-    if (auto const res = invalidAMMAsset(issue2, pair))
+    if (auto const res = invalidAMMAsset(asset2, pair))
         return res;
     return tesSUCCESS;
 }
@@ -75,10 +91,10 @@ invalidAMMAssetPair(
 NotTEC
 invalidAMMAmount(
     STAmount const& amount,
-    std::optional<std::pair<Issue, Issue>> const& pair,
+    std::optional<std::pair<Asset, Asset>> const& pair,
     bool validZero)
 {
-    if (auto const res = invalidAMMAsset(amount.issue(), pair))
+    if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
     if (amount < beast::zero || (!validZero && amount == beast::zero))
         return temBAD_AMOUNT;
@@ -92,12 +108,10 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
     XRPL_ASSERT(
-        expiration >= TOTAL_TIME_SLOT_SECS,
-        "ripple::ammAuctionTimeSlot : minimum expiration");
+        expiration >= TOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
     if (expiration >= TOTAL_TIME_SLOT_SECS)
     {
-        if (auto const start = expiration - TOTAL_TIME_SLOT_SECS;
-            current >= start)
+        if (auto const start = expiration - TOTAL_TIME_SLOT_SECS; current >= start)
         {
             if (auto const diff = current - start; diff < TOTAL_TIME_SLOT_SECS)
                 return diff / AUCTION_SLOT_INTERVAL_DURATION;
@@ -112,4 +126,4 @@ ammEnabled(Rules const& rules)
     return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

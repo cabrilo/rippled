@@ -3,17 +3,19 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 
-namespace ripple {
+namespace xrpl {
 namespace test {
 namespace jtx {
 
 qualityInPercent::qualityInPercent(double percent)
+    // NOLINTNEXTLINE(cppcoreguidelines-use-default-member-init)
     : qIn_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
 {
     assert(percent <= 400 && percent >= 0);
 }
 
 qualityOutPercent::qualityOutPercent(double percent)
+    // NOLINTNEXTLINE(cppcoreguidelines-use-default-member-init)
     : qOut_(static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE))
 {
     assert(percent <= 400 && percent >= 0);
@@ -51,4 +53,4 @@ qualityOutPercent::operator()(Env&, JTx& jt) const
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

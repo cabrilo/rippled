@@ -1,16 +1,15 @@
-#ifndef XRPL_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
-#define XRPL_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/Job.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 
 #include <mutex>
 
-namespace ripple {
+namespace xrpl {
 
 /**
     This class is an "active" object. It maintains its own timer
@@ -60,6 +59,8 @@ public:
     virtual void
     cancel();
 
+    virtual ~TimeoutCounter() = default;
+
 protected:
     using ScopedLockType = std::unique_lock<std::recursive_mutex>;
 
@@ -76,8 +77,6 @@ protected:
         std::chrono::milliseconds timeoutInterval,
         QueueJobParameter&& jobParameter,
         beast::Journal journal);
-
-    virtual ~TimeoutCounter() = default;
 
     /** Schedule a call to queueJob() after mTimerInterval. */
     void
@@ -102,7 +101,7 @@ protected:
     }
 
     // Used in this class for access to boost::asio::io_context and
-    // ripple::Overlay. Used in subtypes for the kitchen sink.
+    // xrpl::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::Journal journal_;
     mutable std::recursive_mutex mtx_;
@@ -110,11 +109,11 @@ protected:
     /** The hash of the object (in practice, always a ledger) we are trying to
      * fetch. */
     uint256 const hash_;
-    int timeouts_;
-    bool complete_;
-    bool failed_;
+    int timeouts_{0};
+    bool complete_{false};
+    bool failed_{false};
     /** Whether forward progress has been made. */
-    bool progress_;
+    bool progress_{false};
     /** The minimum time to wait between calls to execute(). */
     std::chrono::milliseconds timerInterval_;
 
@@ -130,6 +129,4 @@ private:
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

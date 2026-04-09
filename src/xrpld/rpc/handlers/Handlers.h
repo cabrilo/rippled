@@ -1,9 +1,8 @@
-#ifndef XRPL_RPC_HANDLERS_HANDLERS_H_INCLUDED
-#define XRPL_RPC_HANDLERS_HANDLERS_H_INCLUDED
+#pragma once
 
-#include <xrpld/rpc/handlers/LedgerHandler.h>
+#include <xrpld/rpc/handlers/ledger/Ledger.h>
 
-namespace ripple {
+namespace xrpl {
 
 Json::Value
 doAccountCurrencies(RPC::JsonContext&);
@@ -20,7 +19,7 @@ doAccountObjects(RPC::JsonContext&);
 Json::Value
 doAccountOffers(RPC::JsonContext&);
 Json::Value
-doAccountTxJson(RPC::JsonContext&);
+doAccountTx(RPC::JsonContext&);
 Json::Value
 doAMMInfo(RPC::JsonContext&);
 Json::Value
@@ -149,6 +148,4 @@ Json::Value
 doValidatorInfo(RPC::JsonContext&);
 Json::Value
 doVaultInfo(RPC::JsonContext&);
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

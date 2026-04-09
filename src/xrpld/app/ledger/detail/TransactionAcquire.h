@@ -1,26 +1,21 @@
-#ifndef XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
-#define XRPL_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
+#pragma once
 
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/shamap/SHAMap.h>
 
-namespace ripple {
+namespace xrpl {
 
 // VFALCO TODO rename to PeerTxRequest
 // A transaction set we are trying to acquire
-class TransactionAcquire final
-    : public TimeoutCounter,
-      public std::enable_shared_from_this<TransactionAcquire>,
-      public CountedObject<TransactionAcquire>
+class TransactionAcquire final : public TimeoutCounter,
+                                 public std::enable_shared_from_this<TransactionAcquire>,
+                                 public CountedObject<TransactionAcquire>
 {
 public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
-    TransactionAcquire(
-        Application& app,
-        uint256 const& hash,
-        std::unique_ptr<PeerSet> peerSet);
+    TransactionAcquire(Application& app, uint256 const& hash, std::unique_ptr<PeerSet> peerSet);
     ~TransactionAcquire() = default;
 
     SHAMapAddNode
@@ -36,7 +31,7 @@ public:
 
 private:
     std::shared_ptr<SHAMap> mMap;
-    bool mHaveRoot;
+    bool mHaveRoot{false};
     std::unique_ptr<PeerSet> mPeerSet;
 
     void
@@ -54,6 +49,4 @@ private:
     pmDowncast() override;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

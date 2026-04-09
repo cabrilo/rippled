@@ -1,5 +1,4 @@
-#ifndef XRPL_TEST_JTX_PATHS_H_INCLUDED
-#define XRPL_TEST_JTX_PATHS_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -7,7 +6,8 @@
 
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
+class STPath;
 namespace test {
 namespace jtx {
 
@@ -15,12 +15,12 @@ namespace jtx {
 class paths
 {
 private:
-    Issue in_;
+    Asset in_;
     int depth_;
     unsigned int limit_;
 
 public:
-    paths(Issue const& in, int depth = 7, unsigned int limit = 4)
+    paths(Asset const& in, int depth = 7, unsigned int limit = 4)
         : in_(in), depth_(depth), limit_(limit)
     {
     }
@@ -45,6 +45,8 @@ public:
 
     template <class T, class... Args>
     explicit path(T const& t, Args const&... args);
+
+    path(STPath const& p);
 
     void
     operator()(Env&, JTx& jt) const;
@@ -94,6 +96,4 @@ path::append(T const& t, Args const&... args)
 
 }  // namespace jtx
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,5 +1,4 @@
-#ifndef XRPL_LEDGER_READVIEW_H_INCLUDED
-#define XRPL_LEDGER_READVIEW_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -18,7 +17,7 @@
 #include <optional>
 #include <unordered_set>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -31,8 +30,7 @@ namespace ripple {
 class ReadView
 {
 public:
-    using tx_type =
-        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
+    using tx_type = std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>;
 
     using key_type = uint256;
 
@@ -80,8 +78,8 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerInfo const&
-    info() const = 0;
+    virtual LedgerHeader const&
+    header() const = 0;
 
     /** Returns true if this reflects an open ledger. */
     virtual bool
@@ -91,14 +89,14 @@ public:
     NetClock::time_point
     parentCloseTime() const
     {
-        return info().parentCloseTime;
+        return header().parentCloseTime;
     }
 
     /** Returns the sequence number of the base ledger. */
     LedgerIndex
     seq() const
     {
-        return info().seq;
+        return header().seq;
     }
 
     /** Returns the fees for the base ledger. */
@@ -130,9 +128,7 @@ public:
         interval (key, last).
     */
     virtual std::optional<key_type>
-    succ(
-        key_type const& key,
-        std::optional<key_type> const& last = std::nullopt) const = 0;
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
     /** Return the state item associated with a key.
 
@@ -152,16 +148,33 @@ public:
 
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count
-    // changes that accounts make during a payment. `balanceHook` adjusts
+    // changes that accounts make during a payment. `balanceHookIOU` adjusts
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
     virtual STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const
+    balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
     {
+        XRPL_ASSERT(amount.holds<Issue>(), "balanceHookIOU: amount is for Issue");
+
         return amount;
+    }
+
+    // balanceHookMPT adjusts balances so newly acquired assets are not counted
+    // toward the balance.
+    virtual STAmount
+    balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount) const
+    {
+        return STAmount{issue, amount};
+    }
+
+    // An offer owned by an issuer and selling MPT is limited by the issuer's
+    // funds available to issue, which are originally available funds less
+    // already self sold MPT amounts (MPT sell offer). This hook is used
+    // by issuerFundsToSelfIssue() function.
+    virtual STAmount
+    balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const
+    {
+        return STAmount{issue, amount};
     }
 
     // Accounts in a payment are not allowed to use assets acquired during that
@@ -258,8 +271,6 @@ makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
     std::unordered_set<uint256, beast::uhash<>> const& presets);
 
-}  // namespace ripple
+}  // namespace xrpl
 
 #include <xrpl/ledger/detail/ReadViewFwdRange.ipp>
-
-#endif
